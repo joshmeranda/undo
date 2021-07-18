@@ -3,8 +3,8 @@
 #
 # USAGE: example [--help --version --verbose] <command> <args>
 #   commands:
-#     do [--dir|-dir DIR=$HOME]         create the file DIR/example
-#     dont [--dir|-d DIR=$HOME]         delete the file DIR/example
+#     do [--dir,-dir DIR=$HOME]         create the file DIR/example
+#     dont [--dir,-d DIR=$HOME]         delete the file DIR/example
 
 # Note the simple argument group pairing a long and short argument together and storing the given value and later
 # referencing it. You can provide a variable name to store the argument value, and the longest provided argument name in
@@ -19,12 +19,12 @@
 Also see the use of a
 # ternary conditional. Here `DIR ? $DIR/example : ~/example` checks if a value was specified for DIR, and if so it will
 # prepend that value to the
-example do [DIR:--dir|-d] [?:--verbose] path -> rm [VERBOSE ? --verbose] [DIR ? $DIR/example : ~/example]
+example do [DIR:--dir,-d] [?:--verbose] -> rm [VERBOSE ? --verbose] [DIR ? $DIR/example : ~/example]
 
 # WARNING: in most cases something like this is impractical because there is no guarantee that there was no data written
 # to the 'example' file; however, since the example command does not write to teh of 'example'  file after writing it
 # and it is unlikely for any truly useful software to rely on such a file it is "sage" to recreate it here.
-example dont [DIR:--dir|-d] -> test ! -example && touch %DIR ? $DIR/example : ~/example%
+example dont [DIR:--dir,-d] -> test ! -example && touch %DIR ? $DIR/example : ~/example%
 
 # Here you can see a more complicated use case where you need to add some additional log to you undo pattern. Since the
 # `mv` command may be use d to wither rename a file or move it to a new directory we must first check if the DST is a

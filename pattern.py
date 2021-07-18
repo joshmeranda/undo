@@ -7,7 +7,7 @@ import typing
 
 
 class ArgNum(enum.Enum):
-    Flag = 0
+    Zero = 0
     One = 1
     Many = 2
 
@@ -59,7 +59,7 @@ class ArgumentPatternParser:
         quantifier = content[match.start(): match.end()]
 
         if quantifier == "?":
-            return ArgNum.Flag, 1
+            return ArgNum.Zero, 1
         elif quantifier == "...":
             return ArgNum.Many, 3
         else:
@@ -72,7 +72,7 @@ class ArgumentPatternParser:
             return list()
 
         # todo: ignore whitespace when splitting
-        all_args = content.split("|")
+        all_args = content.split(",")
 
         for arg in all_args:
             if ArgumentPatternParser.__ARG_REGEX.fullmatch(arg) is None:
@@ -83,7 +83,7 @@ class ArgumentPatternParser:
     def parse(self, content: str) -> ArgumentPattern:
         """Attempt to parse an ArgumentPattern from a str.
 
-        Note: expects to receive the surrounding bracket (ie "[-d|--dir]" not "-d|--dir")
+        Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
 
         Basic syntax follows this:
 
@@ -136,4 +136,27 @@ class ArgumentPatternParser:
         if ident is None and len(args) > 0:
             ident = max(args, key=lambda l: len(l)).lstrip("-").upper()
 
-        return ArgumentPattern(ident, qualifier, args, is_required, is_positional)
+        return ArgumentPattern(ident, qualifier, args, is_positional, is_required)
+
+
+@dataclasses.dataclass
+class CommandPattern:
+    command: str
+    sub_commands: list[str]
+    arguments: list[ArgumentPattern]
+
+
+class CommandPatternParser:
+
+    def __init__(self, arg_parser: ArgumentPatternParser):
+        self.__arg_parser = arg_parser
+
+    def parse(self, content: str) -> CommandPattern:
+        argv = content.split()
+
+        command = argv[0]
+
+        sub_commands = [arg for arg in argv[1:] if arg[0] not in "{<"]
+        arguments = [self.__arg_parser.parse(arg) for arg in argv[len(sub_commands) + 1:]]
+
+        return CommandPattern(command, sub_commands, arguments)
