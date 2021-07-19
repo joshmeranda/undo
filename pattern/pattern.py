@@ -6,10 +6,35 @@ import re
 import typing
 
 
-class ArgNum(enum.Enum):
-    Zero = 0
-    One = 1
-    Many = 2
+class Quantifier(enum.Enum):
+    N = 1
+    AtLeastOne = 2
+    Any = 3
+
+
+class ArgNum:
+    def __init__(self, quantifier: Quantifier, count: typing.Optional[int] = None):
+        """Describes the amount of values for a command argument.
+
+        :param quantifier: describes the type of value quantity.
+        :param count: the optional amount of arguments (defaults to None), if quantifier is not Quantifier.N this
+            parameter is ignored.
+        :raises
+        """
+        self.quantifier = quantifier
+
+        if self.quantifier == Quantifier.N:
+            if count is None:
+                raise ValueError("'count' must not be None when quantifier is N")
+
+            if count < 0:
+                raise ValueError("'count' must be >= 0 but was '{count}'")
+            self.count = count
+        else:
+            self.count = None
+
+    def __eq__(self, other):
+        return isinstance(other, ArgNum) and self.quantifier == other.quantifier and self.count == other.count
 
 
 @dataclasses.dataclass
@@ -18,7 +43,7 @@ class ArgumentPattern:
     var_name: typing.Optional[str]
 
     # todo: rare cases have more than one long and or short argument name
-    arg_num: ArgNum
+    arg_num: typing.Union[ArgNum, int]
 
     args: list[str]
 
@@ -30,7 +55,7 @@ class ArgumentPatternParser:
     """A parser for an argument pattern."""
 
     __IDENTIFIER_REGEX = re.compile("[A-Z]+")
-    __QUANTIFIER_REGEX = re.compile(r"\?|\.\.\.")
+    __QUANTIFIER_REGEX = re.compile(r"\+|\?|\.\.\.|[1-9][0-9]*")
 
     __SHORT_REGEX = r"-[a-zA-Z0-9]"
     __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
@@ -54,16 +79,20 @@ class ArgumentPatternParser:
         match = re.match(ArgumentPatternParser.__QUANTIFIER_REGEX, content)
 
         if match is None:
-            return ArgNum.One, 0
+            return ArgNum(Quantifier.N, 1), 0
 
         quantifier = content[match.start(): match.end()]
 
         if quantifier == "?":
-            return ArgNum.Zero, 1
+            arg_num = ArgNum(Quantifier.N, 0)
+        elif quantifier == '+':
+            arg_num = ArgNum(Quantifier.AtLeastOne)
         elif quantifier == "...":
-            return ArgNum.Many, 3
+            arg_num = ArgNum(Quantifier.Any)
         else:
-            raise ValueError(f"unexpected quantifier value '{quantifier}'")
+            arg_num = ArgNum(Quantifier.N, int(quantifier))
+
+        return arg_num, len(quantifier)
 
     def __parse_args(self, content: str) -> list[str]:
         """Parse a list of the short and long argument names without the preceding dashes."""
@@ -123,7 +152,7 @@ class ArgumentPatternParser:
         ident, size = self.__parse_identifier(content[offset:-1])
         offset += size
 
-        qualifier, size = self.__parse_quantifier(content[offset:-1])
+        quantifier, size = self.__parse_quantifier(content[offset:-1])
         offset += size
 
         if content[offset] == ":":
@@ -136,7 +165,7 @@ class ArgumentPatternParser:
         if ident is None and len(args) > 0:
             ident = max(args, key=lambda l: len(l)).lstrip("-").upper()
 
-        return ArgumentPattern(ident, qualifier, args, is_positional, is_required)
+        return ArgumentPattern(ident, quantifier, args, is_positional, is_required)
 
 
 @dataclasses.dataclass

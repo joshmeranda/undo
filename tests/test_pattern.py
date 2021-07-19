@@ -1,5 +1,5 @@
 import unittest
-from pattern import ArgumentPattern, ArgNum, ArgumentPatternParser, CommandPatternParser, CommandPattern
+from pattern import ArgumentPattern, ArgNum, ArgumentPatternParser, CommandPatternParser, CommandPattern, Quantifier
 
 
 class TestArgumentPattern(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_parse_flag(self):
         content = "[VERBOSE?:--verbose,-v]"
 
-        expected = ArgumentPattern("VERBOSE", ArgNum.Zero, ["--verbose", "-v"], False, False)
+        expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["--verbose", "-v"], False, False)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -18,7 +18,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_parse_single(self):
         content = "[DIR:-d,--dir]"
 
-        expected = ArgumentPattern("DIR", ArgNum.One, ["-d", "--dir"], False, False)
+        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -26,7 +26,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_parse_many(self):
         content = "[FIELDS...:-f,--fields]"
 
-        expected = ArgumentPattern("FIELDS", ArgNum.Many, ["-f", "--fields"], False, False)
+        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.Any), ["-f", "--fields"], False, False)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -34,7 +34,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_many(self):
         content = "<SRC...>"
 
-        expected = ArgumentPattern("SRC", ArgNum.Many, list(), True, True)
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.Any), list(), True, True)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -42,7 +42,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_missing_var_name(self):
         content = "[--dir,-d]"
 
-        expected = ArgumentPattern("DIR", ArgNum.One, ["--dir", "-d"], False, False)
+        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["--dir", "-d"], False, False)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -50,7 +50,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_missing_var_name(self):
         content = "<...>"
 
-        expected = ArgumentPattern(None, ArgNum.Many, list(), True, True)
+        expected = ArgumentPattern(None, ArgNum(Quantifier.Any), list(), True, True)
         actual = self.__parser.parse(content)
 
         self.assertEqual(expected, actual)
@@ -89,7 +89,7 @@ class TestCommandPattern(unittest.TestCase):
 
         actual = self.__parser.parse(content)
         expected = CommandPattern("test", list(), [
-            ArgumentPattern("VERBOSE", ArgNum.Zero, ["--verbose"], False, True)
+            ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["--verbose"], False, True)
         ])
 
         self.assertEqual(expected, actual)
