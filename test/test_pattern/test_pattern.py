@@ -53,25 +53,35 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_optional_positional(self):
+        content = "[]"
+
+        with self.assertRaises(ValueError):
+            parse_argument(content)
+
     def test_bad_braces(self):
-        self.assertRaises(ValueError, parse_argument, ["[>"])
-        self.assertRaises(ValueError, parse_argument, ["<]"])
-        self.assertRaises(ValueError, parse_argument, ["<"])
-        self.assertRaises(ValueError, parse_argument, ["]"])
-        self.assertRaises(ValueError, parse_argument, ["I am not wrapped at all"])
+        with self.assertRaises(ValueError):
+            parse_argument("[>")
+            parse_argument("<]")
+            parse_argument("<")
+            parse_argument("]")
+            parse_argument("I am not wrapped at all")
 
     def test_bad_argument_name(self):
-        self.assertRaises(ValueError, parse_argument, "<->")
-        self.assertRaises(ValueError, parse_argument, "<-->")
-        self.assertRaises(ValueError, parse_argument, "<-aa>")
-        self.assertRaises(ValueError, parse_argument, "<--a--b>")
-        self.assertRaises(ValueError, parse_argument, "<-a--a>")
+        with self.assertRaises(ValueError):
+            parse_argument("<->")
+            parse_argument("<-->")
+            parse_argument("<-aa>")
+            parse_argument("<--a--b>")
+            parse_argument("<-a--a>")
 
     def test_bad_quantifier_value(self):
-        self.assertRaises(ValueError, parse_argument, "<VAL-:>")
-        self.assertRaises(ValueError, parse_argument, "<VAL[:>")
-        self.assertRaises(ValueError, parse_argument, "<VAL--arg:>")
-        self.assertRaises(ValueError, parse_argument, "<VAL>")
+        with self.assertRaises(ValueError):
+            parse_argument("<VAL-:>")
+            parse_argument("<VAL-:>")
+            parse_argument("<VAL[:>")
+            parse_argument("<VAL--arg:>")
+            parse_argument("<VAL>")
 
 
 class TestCommandPattern(unittest.TestCase):
@@ -112,3 +122,7 @@ class TestCommandPattern(unittest.TestCase):
         actual = parse_command_pattern(content)
 
         self.assertEqual(expected, actual)
+
+
+if __name__ == "__main__":
+    unittest.main()

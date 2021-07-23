@@ -35,6 +35,7 @@ class ArgNum:
         return isinstance(other, ArgNum) and self.quantifier == other.quantifier and self.count == other.count
 
 
+# todo: may need to support argument groups
 @dataclasses.dataclass
 class ArgumentPattern:
     # if var_name is optional, it should be assigned in order from 1 - n in the calling method / class
@@ -166,6 +167,9 @@ def parse_argument(content: str) -> ArgumentPattern:
     args = __parse_args(content[offset: -1])
 
     is_positional = len(args) == 0
+
+    if is_positional and not is_required:
+        raise ValueError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
 
     if ident is None and len(args) > 0:
         ident = max(args, key=lambda l: len(l)).lstrip('-').upper()
