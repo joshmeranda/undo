@@ -57,9 +57,9 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
         else:
             names = arg.args
 
-        if arg.arg_num.quantifier == Quantifier.Any:
+        if arg.arg_num.quantifier == Quantifier.ANY:
             kwargs["nargs"] = "*"
-        elif arg.arg_num.quantifier == Quantifier.AtLeastOne:
+        elif arg.arg_num.quantifier == Quantifier.AT_LEAST_ONE:
             kwargs["nargs"] = "+"
         elif arg.arg_num.count == 1:
             kwargs["nargs"] = None

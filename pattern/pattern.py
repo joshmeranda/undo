@@ -6,8 +6,8 @@ import typing
 
 class Quantifier(enum.Enum):
     N = 1
-    AtLeastOne = 2
-    Any = 3
+    AT_LEAST_ONE = 2
+    ANY = 3
 
 
 class ArgNum:
@@ -91,9 +91,9 @@ def __parse_arg_num(content: str) -> (ArgNum, int):
     if quantifier == '?':
         arg_num = ArgNum(Quantifier.N, 0)
     elif quantifier == '+':
-        arg_num = ArgNum(Quantifier.AtLeastOne)
+        arg_num = ArgNum(Quantifier.AT_LEAST_ONE)
     elif quantifier == "...":
-        arg_num = ArgNum(Quantifier.Any)
+        arg_num = ArgNum(Quantifier.ANY)
     else:
         arg_num = ArgNum(Quantifier.N, int(quantifier))
 
@@ -172,7 +172,8 @@ def parse_argument(content: str) -> ArgumentPattern:
         raise ValueError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
 
     if ident is None and len(args) > 0:
-        ident = max(args, key=lambda l: len(l)).lstrip('-').upper()
+        ident = (max(args, key=lambda l: len(l)).lstrip('-')
+                 .upper().replace("-", "_"))
 
     return ArgumentPattern(ident, arg_num, args, is_positional, is_required)
 

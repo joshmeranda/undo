@@ -1,0 +1,15 @@
+# conditionals
+% VERBOSE ? --verbose %
+% DIR ? DIR/example : ~/example %
+
+# built-in methods
+dirname
+basename
+abspath
+exists
+is_file
+is_dir
+env
+
+# calling methods
+% echo `env HOST` %

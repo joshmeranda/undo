@@ -50,7 +50,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_positional_arg(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.AtLeastOne, None), list(), True, True)
+            ArgumentPattern("VAL", ArgNum(Quantifier.AT_LEAST_ONE, None), list(), True, True)
         ])
         parser = pattern_to_argparse(pattern)
 

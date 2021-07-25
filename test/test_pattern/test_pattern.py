@@ -4,7 +4,7 @@ from pattern import ArgNum, ArgumentPattern, CommandPattern, Quantifier, parse_a
 
 
 class TestArgumentPattern(unittest.TestCase):
-    
+
     def test_parse_flag(self):
         content = "[VERBOSE?:--verbose,-v]"
 
@@ -24,7 +24,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_parse_many(self):
         content = "[FIELDS...:-f,--fields]"
 
-        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.Any), ["-f", "--fields"], False, False)
+        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.ANY), ["-f", "--fields"], False, False)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
@@ -32,7 +32,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_many(self):
         content = "<SRC...>"
 
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.Any), list(), True, True)
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
@@ -45,10 +45,18 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_missing_var_name_with_dashes(self):
+        content = "[?:--do-something]"
+
+        expected = ArgumentPattern("DO_SOMETHING", ArgNum(Quantifier.N, 0), ["--do-something"], False, False)
+        actual = parse_argument(content)
+
+        self.assertEqual(expected, actual)
+
     def test_positional_missing_var_name(self):
         content = "<...>"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.Any), list(), True, True)
+        expected = ArgumentPattern(None, ArgNum(Quantifier.ANY), list(), True, True)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
