@@ -2,13 +2,15 @@ import unittest
 from expression import *
 import expression
 
-tokenizer = expression.__tokenize
+tokenize = expression.__tokenize
+
+parse_tokens = expression.__parse_tokens
 
 
 class TestTokenize(unittest.TestCase):
     def test_tokenize_empty(self):
         expected = list()
-        actual = tokenizer("")
+        actual = tokenize("")
 
         self.assertListEqual(expected, actual)
 
@@ -16,7 +18,7 @@ class TestTokenize(unittest.TestCase):
         expected = [
             Token(TokenKind.IDENT, "A", 1)
         ]
-        actual = tokenizer("A")
+        actual = tokenize("A")
 
         self.assertListEqual(expected, actual)
 
@@ -28,7 +30,7 @@ class TestTokenize(unittest.TestCase):
             Token(TokenKind.TERNAY_ELSE, ":", 4),
             Token(TokenKind.IDENT, "C", 5),
         ]
-        actual = tokenizer("A?B:C")
+        actual = tokenize("A?B:C")
 
         self.assertListEqual(expected, actual)
 
@@ -46,7 +48,7 @@ class TestTokenize(unittest.TestCase):
             Token(TokenKind.TERNAY_IF, "?", 9),
             Token(TokenKind.IDENT, "D", 10)
         ]
-        actual = tokenizer("A&&B||!C?D")
+        actual = tokenize("A&&B||!C?D")
 
         self.assertListEqual(expected, actual)
 
@@ -58,20 +60,42 @@ class TestTokenize(unittest.TestCase):
             Token(TokenKind.TERNAY_ELSE, ":", 7),
             Token(TokenKind.IDENT, "C", 9),
         ]
-        actual = tokenizer("A ? B : C")
+        actual = tokenize("A ? B : C")
 
         self.assertListEqual(expected, actual)
 
     def test_snake_case_ident(self):
-        expected = [Token(TokenKind.IDENT, "UNDERSCORED_IDENT", 0)]
-        actual = tokenizer("UNDERSCORED_IDENT")
+        expected = [
+            Token(TokenKind.IDENT, "UNDERSCORED_IDENT", 1)
+        ]
+        actual = tokenize("UNDERSCORED_IDENT")
 
         self.assertListEqual(expected, actual)
 
     def test_unrecognized_token(self):
-        with self.assertRaises(ValueError):
-            tokenizer("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
-            tokenizer("+")
+        with self.assertRaises(ExpressionError):
+            tokenize("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
+            tokenize("+")
+
+
+class TestParseIdentifierTokens(unittest.TestCase):
+    pass
+
+
+class TestParseTernaryExpressionTokens(unittest.TestCase):
+    pass
+
+
+class TestParseValueCommandExpressionTokens(unittest.TestCase):
+    pass
+
+
+class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
+    pass
+
+
+class TestParseExistenceTokens(unittest.TestCase):
+    pass
 
 
 if __name__ == "__main__":
