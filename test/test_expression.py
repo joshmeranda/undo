@@ -77,9 +77,20 @@ class TestTokenize(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_tokenize_command(self):
+        self.assertEqual([Token(TokenKind.COMMAND, "dirname", 1)], tokenize("dirname"))
+        self.assertEqual([Token(TokenKind.COMMAND, "basename", 1)], tokenize("basename"))
+        self.assertEqual([Token(TokenKind.COMMAND, "abspath", 1)], tokenize("abspath"))
+        self.assertEqual([Token(TokenKind.COMMAND, "env", 1)], tokenize("env"))
+        self.assertEqual([Token(TokenKind.COMMAND, "exists", 1)], tokenize("exists"))
+        self.assertEqual([Token(TokenKind.COMMAND, "isfile", 1)], tokenize("isfile"))
+        self.assertEqual([Token(TokenKind.COMMAND, "isdir", 1)], tokenize("isdir"))
+
     def test_unrecognized_token(self):
         with self.assertRaises(ExpressionError):
             tokenize("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
+
+        with self.assertRaises(ExpressionError):
             tokenize("+")
 
 
@@ -105,7 +116,7 @@ class TestParseValue(unittest.TestCase):
         self.assertEqual(1, offset)
 
     def test_value_command_expression(self):
-        command = Token(TokenKind.IDENT, "basename", 0)
+        command = Token(TokenKind.COMMAND, "basename", 0)
         argument = Token(TokenKind.IDENT, "/some/path", 0)
 
         tokens = [
@@ -173,7 +184,7 @@ class TestParseConditionalExpression(unittest.TestCase):
         self.assertEqual(1, offset)
 
     def test_conditional_command_expression(self):
-        command = Token(TokenKind.IDENT, "basename", 0)
+        command = Token(TokenKind.COMMAND, "exists", 0)
         argument = Token(TokenKind.IDENT, "/some/path", 0)
 
         tokens = [
@@ -360,13 +371,13 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
     def test_parse_basic(self):
         tokens = [
             Token(TokenKind.TICK, "`", 0),
-            Token(TokenKind.IDENT, "dirname", 0),
+            Token(TokenKind.COMMAND, "dirname", 0),
             Token(TokenKind.IDENT, "A", 0),
             Token(TokenKind.TICK, "`", 0),
         ]
 
         expected = ValueCommandExpression(
-            Token(TokenKind.IDENT, "dirname", 0),
+            Token(TokenKind.COMMAND, "dirname", 0),
             Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_value_command_tokens(tokens)
 
@@ -381,7 +392,7 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
                         Token(kind, "", 0)
                     ])
 
-            if kind != TokenKind.IDENT:
+            if kind != TokenKind.COMMAND:
                 with self.assertRaises(ParseError):
                     parse_value_command_tokens([
                         Token(TokenKind.TICK, "`", 0),
@@ -394,14 +405,14 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
         tokens = [
             Token(TokenKind.NOT, "!", 0),
             Token(TokenKind.TICK, "`", 0),
-            Token(TokenKind.IDENT, "isfile", 0),
+            Token(TokenKind.COMMAND, "isfile", 0),
             Token(TokenKind.IDENT, "A", 0),
             Token(TokenKind.TICK, "`", 0),
         ]
 
         expected = ConditionalCommandExpression(
             True,
-            Token(TokenKind.IDENT, "isfile", 0),
+            Token(TokenKind.COMMAND, "isfile", 0),
             Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_conditional_command_tokens(tokens)
 

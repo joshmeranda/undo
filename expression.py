@@ -7,13 +7,19 @@ import re
 import typing
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Tokenization classes                                                        #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
 # todo: add string literals
 # todo: add parentheses for grouping
 # todo: add ellipse (ie '...') for group command  calls
-# todo; command specific token for stricter rules
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
+
     TICK = enum.auto()
+    COMMAND = enum.auto()
 
     AND = enum.auto()
     OR = enum.auto()
@@ -32,6 +38,11 @@ class Token:
     kind: TokenKind
     body: str
     col: int
+
+
+__IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
+__COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
+__TOKEN_REGEX = re.compile(rf" *({__COMMAND_REGEX}|{__IDENT_REGEX}|\?|:|&&|\|\||!|`)")
 
 
 def __tokenize(content) -> list[Token]:
@@ -67,6 +78,8 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.OR
         elif body == "!":
             kind = TokenKind.NOT
+        elif body in __COMMAND_REGEX.split("|"):
+            kind = TokenKind.COMMAND
         else:
             kind = TokenKind.IDENT
 
@@ -297,9 +310,6 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Parsing methods                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-__IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
-__TOKEN_REGEX = re.compile(rf" *({__IDENT_REGEX}|\?|:|&&|\|\||!|`)")
-
 
 def __parse_tokens(tokens: list[Token]) -> UndoExpression:
     """Parse an UndoExpression from a list of tokens."""
@@ -421,7 +431,7 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, Token, int):
     if tokens[0].kind != TokenKind.TICK:
         raise UnexpectedTokenError(TokenKind.TICK, tokens[0].kind)
 
-    if tokens[1].kind != TokenKind.IDENT:
+    if tokens[1].kind != TokenKind.COMMAND:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
     command = tokens[1]
 
