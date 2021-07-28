@@ -16,6 +16,8 @@ class TestPatternToArgparse(unittest.TestCase):
 
         with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["--verbose"])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["some", "positional", "args"])
 
     def test_optional_arg(self):
@@ -78,7 +80,11 @@ class TestPatternToArgparse(unittest.TestCase):
 
         with self.assertRaises(argparse.ArgumentError):
             parser.parse_args([])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["one", "three"])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["two"])
 
         expected = argparse.Namespace(command="one")
@@ -92,8 +98,14 @@ class TestPatternToArgparse(unittest.TestCase):
 
         with self.assertRaises(argparse.ArgumentError):
             parser.parse_args([])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["one"])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["one", "three"])
+
+        with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["two"])
 
         expected = argparse.Namespace(command="two")

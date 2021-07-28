@@ -7,12 +7,10 @@ import re
 import typing
 
 
-class BooleanOperator(enum.Enum):
-    AND = enum.auto()
-    OR = enum.auto()
-    NOT = enum.auto()
-
-
+# todo: add string literals
+# todo: add parentheses for grouping
+# todo: add ellipse (ie '...') for group command  calls
+# todo; command specific token for stricter rules
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
     TICK = enum.auto()
@@ -21,9 +19,10 @@ class TokenKind(enum.Enum):
     OR = enum.auto()
     NOT = enum.auto()
 
-    TERNAY_IF = enum.auto()
-    TERNAY_ELSE = enum.auto()
+    TERNARY_IF = enum.auto()
+    TERNARY_ELSE = enum.auto()
 
+    # Unknown iss only used to allow for passing a token to TokenError.
     UNKNOWN = enum.auto()
 
 
@@ -33,6 +32,50 @@ class Token:
     kind: TokenKind
     body: str
     col: int
+
+
+def __tokenize(content) -> list[Token]:
+    """Split a string individual tokens."""
+    offset = 0
+    tokens = []
+
+    while offset < len(content):
+        m = __TOKEN_REGEX.match(content[offset:])
+
+        if m is None:
+            # todo: custom error type?
+            body = content[offset:].lstrip().split()[0]
+            col = offset
+            token = Token(TokenKind.UNKNOWN, body, col)
+
+            raise TokenError(token, "Unknown token")
+
+        raw_body = m.string[:m.end()]
+        body = raw_body.strip()
+
+        col = offset + 1 + m.end() - len(body)
+
+        if body == "`":
+            kind = TokenKind.TICK
+        elif body == "?":
+            kind = TokenKind.TERNARY_IF
+        elif body == ":":
+            kind = TokenKind.TERNARY_ELSE
+        elif body == "&&":
+            kind = TokenKind.AND
+        elif body == "||":
+            kind = TokenKind.OR
+        elif body == "!":
+            kind = TokenKind.NOT
+        else:
+            kind = TokenKind.IDENT
+
+        token = Token(kind, body, col)
+        tokens.append(token)
+
+        offset += m.end()
+
+    return tokens
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -73,7 +116,7 @@ class EvaluationError(ExpressionError):
 
 class UnknownCommandException(EvaluationError):
     def __init__(self, command: Token):
-        super().__init__(f"no such command '{command.body}'")
+        super().__init__(f"no such command '{command.body}' at col {command.col}")
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -84,8 +127,11 @@ class UnknownCommandException(EvaluationError):
 class UndoExpression(abc.ABC):
     """Represents an expression resulting in a string command."""
 
+    def __repr__(self):
+        return f"{type(self).__name__}({', '.join([f'{name}: {repr(value)}' for name, value in vars(self).items()])})"
 
-class ValueExpression(abc.ABC, UndoExpression):
+
+class ValueExpression(UndoExpression):
     """An expression that will produce a single string value"""
 
     def evaluate(self, env: dict[str, str]) -> str:
@@ -96,15 +142,98 @@ class ConditionalExpression(UndoExpression):
     """An expression representing a chain of BooleanExpressions and operators."""
 
     def __init__(
-            self, negate: bool, left: 'ConditionalExpression', operator: typing.Optional[TokenKind],
+            self, negate: bool, operator: typing.Optional[Token],
             right: typing.Optional['ConditionalExpression']):
         self.negate = negate
-        self.left = left
         self.operator = operator
         self.right = right
 
+    def __eq__(self, other):
+        return (isinstance(other, ConditionalExpression)
+                and self.negate and other.negate
+                and self.operator == other.operator
+                and self.right == other.right)
+
+    def __str__(self):
+        return f""
+
     def evaluate(self, env: dict[str, str]) -> bool:
         """Evaluate the result of the expression given the map of identifier and values."""
+        if self.operator.kind == TokenKind.AND:
+            return (self.negate
+                    and self.evaluate(env)
+                    and self.right.evaluate(env))
+        elif self.operator.kind == TokenKind.OR:
+            return (self.negate
+                    and self.evaluate(env)
+                    or self.right.evaluate(env))
+        elif self.operator.kind is None:
+            return self.negate and self.evaluate(env)
+
+
+# sub-classes
+
+
+class IdentifierExpression(ValueExpression):
+    """A simple expression which will resolve to a value given an identifier."""
+
+    def __init__(self, identifier: Token):
+        self.identifier = identifier
+
+    def __eq__(self, other):
+        return(isinstance(other, IdentifierExpression)
+               and self.identifier == other.identifier)
+
+    def evaluate(self, env: dict[str, str]) -> str:
+        """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env."""
+        value = env.get(self.identifier.body)
+
+        return "" if value is None else value
+
+
+class TernaryExpression(ValueExpression):
+    """An expression allowing for basic conditional expressions."""
+
+    def __init__(self, condition: ConditionalExpression, if_value: ValueExpression, else_value: typing.Optional[ValueExpression]):
+        self.condition = condition
+        self.if_value = if_value
+        self.else_value = else_value
+
+    def __eq__(self, other):
+        return (isinstance(other, TernaryExpression)
+                and self.condition == other.condition
+                and self.if_value == other.if_value
+                and self.else_value == other.else_value)
+
+    def evaluate(self, env: dict[str, str]) -> str:
+        if self.condition.evaluate(env):
+            return self.if_value.evaluate(env)
+        else:
+            return self.else_value.evaluate(env) if self.else_value is not None else ""
+
+
+class ExistenceExpression(ConditionalExpression):
+    """An expression which evaluates if a value for the given identifier has been set."""
+
+    def __init__(self, negate: bool, identifier: IdentifierExpression,
+                 operator: typing.Optional[Token] = None, right: typing.Optional[ConditionalExpression] = None):
+        super().__init__(negate, operator, right)
+        self.identifier = identifier
+
+    def __eq__(self, other):
+        return (isinstance(other, ExistenceExpression)
+                and self.identifier == other.identifier
+                and self.operator == other.operator
+                and self.right == other.right)
+
+    def evaluate(self, env: dict[str, str]) -> bool:
+        if self.negate:
+            return self.identifier.evaluate(env) == ""
+        else:
+            return self.identifier.evaluate(env) != ""
+
+
+# command-expressions
 
 
 class CommandExpression(abc.ABC):
@@ -114,89 +243,68 @@ class CommandExpression(abc.ABC):
         self.command = command
         self.argument = argument
 
-
-class IdentifierExpression(ValueExpression):
-    """A simple expression which will resolve to a value given an identifier."""
-
-    def __init__(self, identifier: Token):
-        self.identifier = identifier
-
-    def evaluate(self, env: dict[str, str]) -> str:
-        try:
-            return env[self.identifier.body]
-        except KeyError:
-            raise EvaluationError(f"Unknown identifier '{self.identifier.body}' found at col {self.identifier.col}")
+    def __eq__(self, other):
+        return (isinstance(other, CommandExpression)
+                and self.command == other.command
+                and self.argument == other.argument)
 
 
 class ValueCommandExpression(CommandExpression, ValueExpression):
     """A command expression which will return a string value."""
 
     def evaluate(self, _env: dict[str, str]) -> str:
-        if self.command == "dirname":
+        if self.command.body == "dirname":
             return os.path.dirname(self.argument.body)
-        elif self.command == "basename":
+        elif self.command.body == "basename":
             return os.path.basename(self.argument.body)
-        elif self.command == "abspath":
+        elif self.command.body == "abspath":
             return os.path.abspath(self.argument.body)
-        elif self.command == "env":
+        elif self.command.body == "env":
             return os.getenv(self.argument.body)
 
         raise UnknownCommandException(self.command)
-
-
-class TernaryExpression(ValueExpression):
-    """An expression allowing for basic conditional expressions."""
-
-    def __init__(self, condition: ConditionalExpression, if_value: ValueExpression, else_value: ValueExpression):
-        self.condition = condition
-        self.if_value = if_value
-        self.else_value = else_value
-
-    def evaluate(self, env: dict[str, str]) -> str:
-        if self.condition.evaluate(env):
-            return self.if_value.evaluate(env)
-        else:
-            return self.else_value.evaluate(env)
-
-
-class ExistenceExpression(ConditionalExpression):
-    """An expression which evaluates if a value for the given identifier has been set."""
-
-    def __init__(self, negate: bool, identifier: IdentifierExpression):
-        super().__init__(negate, self, None, None)
-        self.identifier = identifier
-
-    def evaluate(self, env: dict[str, str]) -> bool:
-        return env.get(self.identifier.identifier.body) is not None
 
 
 class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
     """A command expression which will return a boolean value."""
 
     def __init__(self, negate: bool, command: Token, argument: Token):
-        super(CommandExpression, self).__init__(command, argument)
-        super(ConditionalExpression, self).__init__(negate, self, None, None)
+        super(ConditionalCommandExpression, self).__init__(command, argument)
+        super(CommandExpression, self).__init__(negate, None, None)
+
+    def __eq__(self, other):
+        return (isinstance(other, ConditionalCommandExpression)
+                and self.negate == other.negate
+                and self.command == other.command
+                and self.argument == other.argument
+
+                and self.operator == other.operator
+                and self.right == other.right)
 
     def evaluate(self, _env: dict[str, str]) -> bool:
-        if self.command == "exists":
-            return os.path.exists(self.argument.body)
-        elif self.command == "file":
-            return os.path.isfile(self.argument.body)
-        elif self.command == "dir":
-            return os.path.isdir(self.argument.body)
+        if self.command.body == "exists":
+            result = os.path.exists(self.argument.body)
+        elif self.command.body == "isfile":
+            result = os.path.isfile(self.argument.body)
+        elif self.command.body == "isdir":
+            result = os.path.isdir(self.argument.body)
+        else:
+            raise UnknownCommandException(self.command)
 
-        raise UnknownCommandException(self.command)
+        return result if not self.negate else not result
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Parsing methods                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+__IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
+__TOKEN_REGEX = re.compile(rf" *({__IDENT_REGEX}|\?|:|&&|\|\||!|`)")
 
 
 def __parse_tokens(tokens: list[Token]) -> UndoExpression:
     """Parse an UndoExpression from a list of tokens."""
     try:
-        (expr, _) = __parse_value_expression_tokens(tokens)
+        expr, _ = __parse_value_expression_tokens(tokens)
     except IndexError:
         raise UnexpectedEndOfLineError()
 
@@ -204,19 +312,20 @@ def __parse_tokens(tokens: list[Token]) -> UndoExpression:
 
 
 def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, int):
-    try:
-        return __parse_identifier_expression_tokens(tokens)
-    except ParseError:
-        pass
-
-    try:
-        return __parse_value_command_expression_tokens(tokens)
-    except  ParseError:
-        pass
+    if tokens[0].kind == TokenKind.TICK:
+        try:
+            return __parse_value_command_expression_tokens(tokens)
+        except (ParseError, IndexError) as err:
+            pass
 
     try:
         return __parse_ternary_expression_tokens(tokens)
-    except ParseError:
+    except (ParseError, IndexError) as err:
+        pass
+
+    try:
+        return __parse_identifier_expression_tokens(tokens)
+    except (ParseError, IndexError):
         pass
 
     raise ParseError("expected a value expression but found none")
@@ -225,31 +334,30 @@ def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, in
 def __parse_conditional_expression_tokens(tokens: list[Token]) -> (ConditionalExpression, int):
     """Parse a ConditionalExpression from a list of tokens."""
     negate = False
-    token = tokens[0]
     offset = 0
 
-    if token.kind == TokenKind.NOT:
-        negate = True
-        offset += 1
-
     try:
-        (left, token_count) = __parse_existence_expression_tokens(tokens)
-    except ParseError:
+        conditional, token_count = __parse_existence_expression_tokens(tokens)
+    except (ParseError, IndexError):
         try:
-            (left, token_count) = __parse_conditional_command_expression_tokens(tokens)
-        except ParseError:
-            raise ParseError("expected a binary expression but found none")
+            conditional, token_count = __parse_conditional_command_expression_tokens(tokens)
+        except (ParseError, IndexError):
+            raise ParseError("expected a conditional expression but found none")
+
+    conditional.negate = negate
 
     offset += token_count
 
+    # handle chained conditional operators
     if len(tokens) > offset and tokens[offset].kind in {TokenKind.AND, TokenKind.OR}:
-        operator = tokens[offset].kind
-        right = __parse_conditional_expression_tokens(tokens[offset + 1:])
-    else:
-        operator = None
-        right = None
+        right, token_count = __parse_conditional_expression_tokens(tokens[offset + 1:])
 
-    return ConditionalExpression(negate, left, operator, right)
+        conditional.right = right
+        conditional.operator = tokens[offset]
+
+        offset += token_count + 1
+
+    return conditional, offset
 
 
 def __parse_identifier_expression_tokens(tokens: list[Token]) -> (IdentifierExpression, int):
@@ -263,149 +371,89 @@ def __parse_identifier_expression_tokens(tokens: list[Token]) -> (IdentifierExpr
 
 
 def __parse_ternary_expression_tokens(tokens: list[Token]) -> (TernaryExpression, int):
-    """Parse a TernayrExpression from a list of tokens.
+    """Parse a TernaryExpression from a list of tokens.
 
     Grammar:
         EXISTENCE_EXPR ? VALUE_EXPR [ ':'? VALUE_EXPR ]
     """
-    (condition, offset) = __parse_conditional_expression_tokens(tokens)
+    condition, offset = __parse_conditional_expression_tokens(tokens)
 
-    token = tokens[offset]
-
-    if token.kind != TokenKind.TERNAY_IF:
-        raise UnexpectedTokenError(TokenKind.TERNAY_IF, token.kind)
+    if tokens[offset].kind != TokenKind.TERNARY_IF:
+        raise UnexpectedTokenError(TokenKind.TERNARY_IF, tokens[offset].kind)
     offset += 1
 
-    (if_value, token_count) = __parse_value_expression_tokens(tokens[offset:])
+    if_value, token_count = __parse_value_expression_tokens(tokens[offset:])
     offset += token_count
-
-    token = tokens[offset]
 
     else_value = None
 
-    if token.kind == TokenKind.TERNAY_ELSE:
+    if len(tokens) > offset and tokens[offset].kind == TokenKind.TERNARY_ELSE:
         offset += 1
-        (else_value, token_count) = __parse_value_expression_tokens(tokens[offset:])
+        else_value, token_count = __parse_value_expression_tokens(tokens[offset:])
+        offset += token_count
 
     return TernaryExpression(condition, if_value, else_value), offset
 
 
-def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
+def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpression, int):
+    token = tokens[0]
+    """Parse an ExistenceExpression from a list of tokens.
+
+    Grammar:
+        EXISTENCE_EXPR = '!' ? VALUE_EXPR
+    """
+    negate = False
+    offset = 0
+
+    if token.kind == TokenKind.NOT:
+        negate = True
+        offset += 1
+
+    left, token_count = __parse_identifier_expression_tokens(tokens[offset:])
+
+    offset += token_count
+
+    return ExistenceExpression(negate, left), offset
+
+
+def __parse_command_tokens(tokens: list[Token]) -> (Token, Token, int):
+    """Parse the command and argument from a list of tokens"""
     if tokens[0].kind != TokenKind.TICK:
         raise UnexpectedTokenError(TokenKind.TICK, tokens[0].kind)
 
-    if tokens[1].kind != TokenKind.TICK:
+    if tokens[1].kind != TokenKind.IDENT:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
     command = tokens[1]
 
-    if tokens[2].kind != TokenKind.TICK:
+    # todo: parse ValueExpression
+    if tokens[2].kind != TokenKind.IDENT:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[2].kind)
     argument = tokens[2]
 
     if tokens[3].kind != TokenKind.TICK:
         raise UnexpectedTokenError(TokenKind.TICK, tokens[3].kind)
 
+    return command, argument, 4
+
+
+def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
+    command, argument, token_count = __parse_command_tokens(tokens)
+
     return ValueCommandExpression(command, argument), 4
 
 
 def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (ConditionalCommandExpression, int):
-    negate = tokens[0].kind == TokenKind.NOT
-
-    if tokens[1].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.TICK, tokens[1].kind)
-
-    if tokens[2].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.IDENT, tokens[2].kind)
-    command = tokens[2]
-
-    if tokens[3].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.IDENT, tokens[3].kind)
-    argument = tokens[3]
-
-    if tokens[4].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.TICK, tokens[4].kind)
-
-    return ConditionalCommandExpression(negate, command, argument), 4
-
-
-def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpression, int):
-    """Parse an ExistenceExpression from a list of tokens.
-
-    Grammar:
-        EXISTENCE_EXPR = '!' ? VALUE_EXPR [ ['||' | '&&'] EXISTENCE_EXPR ]*
-    """
-    token = tokens[0]
     negate = False
+    offset = 0
 
-    if token.kind == TokenKind.NOT:
+    if tokens[0].kind == TokenKind.NOT:
         negate = True
-
-    (left, offset) = __parse_identifier_expression_tokens(tokens[1:])
-
-    offset += 1
-
-    operator = None
-    right = None
-
-    token = tokens[offset]
-
-    if token.kind in {TokenKind.AND, TokenKind.OR}:
         offset += 1
 
-        operator = token
+    command, argument, token_count = __parse_command_tokens(tokens[offset:])
+    offset += token_count
 
-        (right, token_count) = __parse_existence_expression_tokens(tokens[offset:])
-        offset += token_count
-
-    return ExistenceExpression(negate, left), offset
-
-
-__IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
-__TOKEN_REGEX = re.compile(rf" *({__IDENT_REGEX}|\?|:|&&|\|\||!|`)")
-
-
-def __tokenize(content) -> list[Token]:
-    """Split a string individual tokens."""
-    offset = 0
-    tokens = []
-
-    while offset < len(content):
-        m = __TOKEN_REGEX.match(content[offset:])
-
-        if m is None:
-            # todo: custom error type?
-            body = content[offset:].lstrip().split()[0]
-            col = offset
-            token = Token(TokenKind.UNKNOWN, body, col)
-
-            raise TokenError(token, "Unknown token")
-
-        raw_body = m.string[:m.end()]
-        body = raw_body.strip()
-
-        col = offset + 1 + m.end() - len(body)
-
-        if body == "`":
-            kind = TokenKind.TICK
-        elif body == "?":
-            kind = TokenKind.TERNAY_IF
-        elif body == ":":
-            kind = TokenKind.TERNAY_ELSE
-        elif body == "&&":
-            kind = TokenKind.AND
-        elif body == "||":
-            kind = TokenKind.OR
-        elif body == "!":
-            kind = TokenKind.NOT
-        else:
-            kind = TokenKind.IDENT
-
-        token = Token(kind, body, col)
-        tokens.append(token)
-
-        offset += m.end()
-
-    return tokens
+    return ConditionalCommandExpression(negate, command, argument), offset
 
 
 def parse(content: str) -> UndoExpression:

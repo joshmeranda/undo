@@ -70,26 +70,50 @@ class TestArgumentPattern(unittest.TestCase):
     def test_bad_braces(self):
         with self.assertRaises(ValueError):
             parse_argument("[>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<]")
+
+        with self.assertRaises(ValueError):
             parse_argument("<")
+
+        with self.assertRaises(ValueError):
             parse_argument("]")
+
+        with self.assertRaises(ValueError):
             parse_argument("I am not wrapped at all")
 
     def test_bad_argument_name(self):
         with self.assertRaises(ValueError):
             parse_argument("<->")
+
+        with self.assertRaises(ValueError):
             parse_argument("<-->")
+
+        with self.assertRaises(ValueError):
             parse_argument("<-aa>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<--a--b>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<-a--a>")
 
     def test_bad_quantifier_value(self):
         with self.assertRaises(ValueError):
             parse_argument("<VAL-:>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<VAL-:>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<VAL[:>")
+
+        with self.assertRaises(ValueError):
             parse_argument("<VAL--arg:>")
-            parse_argument("<VAL>")
+
+        with self.assertRaises(ValueError):
+            parse_argument("<VAL :>")
 
 
 class TestCommandPattern(unittest.TestCase):
