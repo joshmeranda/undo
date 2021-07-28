@@ -13,12 +13,15 @@ import typing
 
 
 # todo: add string literals
-# todo: add parentheses for grouping
 # todo: add ellipse (ie '...') for group command  calls
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
 
     TICK = enum.auto()
+
+    OPEN_PARENTHESE = enum.auto()
+    CLOSE_PARENTHESE = enum.auto()
+
     COMMAND = enum.auto()
 
     AND = enum.auto()
@@ -54,7 +57,6 @@ def __tokenize(content) -> list[Token]:
         m = __TOKEN_REGEX.match(content[offset:])
 
         if m is None:
-            # todo: custom error type?
             body = content[offset:].lstrip().split()[0]
             col = offset
             token = Token(TokenKind.UNKNOWN, body, col)
@@ -78,6 +80,10 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.OR
         elif body == "!":
             kind = TokenKind.NOT
+        elif body == "(":
+            kind = TokenKind.OPEN_PARENTHESE
+        elif body == ")":
+            kind = TokenKind.CLOSE_PARENTHESE
         elif body in __COMMAND_REGEX.split("|"):
             kind = TokenKind.COMMAND
         else:
@@ -322,11 +328,10 @@ def __parse_tokens(tokens: list[Token]) -> UndoExpression:
 
 
 def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, int):
-    if tokens[0].kind == TokenKind.TICK:
-        try:
-            return __parse_value_command_expression_tokens(tokens)
-        except (ParseError, IndexError) as err:
-            pass
+    try:
+        return __parse_value_command_expression_tokens(tokens)
+    except (ParseError, IndexError) as err:
+        pass
 
     try:
         return __parse_ternary_expression_tokens(tokens)
@@ -428,20 +433,20 @@ def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpres
 
 def __parse_command_tokens(tokens: list[Token]) -> (Token, Token, int):
     """Parse the command and argument from a list of tokens"""
-    if tokens[0].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.TICK, tokens[0].kind)
+    if tokens[0].kind != TokenKind.COMMAND:
+        raise UnexpectedTokenError(TokenKind.COMMAND, tokens[0].kind)
+    command = tokens[0]
 
-    if tokens[1].kind != TokenKind.COMMAND:
-        raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
-    command = tokens[1]
+    if tokens[1].kind != TokenKind.OPEN_PARENTHESE:
+        raise UnexpectedTokenError(TokenKind.OPEN_PARENTHESE, tokens[1].kind)
 
     # todo: parse ValueExpression
     if tokens[2].kind != TokenKind.IDENT:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[2].kind)
     argument = tokens[2]
 
-    if tokens[3].kind != TokenKind.TICK:
-        raise UnexpectedTokenError(TokenKind.TICK, tokens[3].kind)
+    if tokens[3].kind != TokenKind.CLOSE_PARENTHESE:
+        raise UnexpectedTokenError(TokenKind.CLOSE, tokens[3].kind)
 
     return command, argument, 4
 

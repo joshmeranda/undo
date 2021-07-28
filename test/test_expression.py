@@ -120,10 +120,10 @@ class TestParseValue(unittest.TestCase):
         argument = Token(TokenKind.IDENT, "/some/path", 0)
 
         tokens = [
-            Token(TokenKind.TICK, '`', 0),
             command,
+            Token(TokenKind.OPEN_PARENTHESE, '(', 0),
             argument,
-            Token(TokenKind.TICK, '`', 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
         expected = ValueCommandExpression(command, argument)
@@ -188,10 +188,10 @@ class TestParseConditionalExpression(unittest.TestCase):
         argument = Token(TokenKind.IDENT, "/some/path", 0)
 
         tokens = [
-            Token(TokenKind.TICK, '`', 0),
             command,
+            Token(TokenKind.OPEN_PARENTHESE, '(', 0),
             argument,
-            Token(TokenKind.TICK, '`', 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
         expected = ConditionalCommandExpression(False, command, argument)
@@ -370,10 +370,10 @@ class TestParseExistenceTokens(unittest.TestCase):
 class TestParseCommandExpressionTokens(unittest.TestCase):
     def test_parse_basic(self):
         tokens = [
-            Token(TokenKind.TICK, "`", 0),
             Token(TokenKind.COMMAND, "dirname", 0),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 0),
             Token(TokenKind.IDENT, "A", 0),
-            Token(TokenKind.TICK, "`", 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
         ]
 
         expected = ValueCommandExpression(
@@ -386,16 +386,16 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
-            if kind != TokenKind.TICK:
+            if kind != TokenKind.COMMAND:
                 with self.assertRaises(ParseError):
                     parse_value_command_tokens([
                         Token(kind, "", 0)
                     ])
 
-            if kind != TokenKind.COMMAND:
+            if kind != TokenKind.OPEN_PARENTHESE:
                 with self.assertRaises(ParseError):
                     parse_value_command_tokens([
-                        Token(TokenKind.TICK, "`", 0),
+                        Token(TokenKind.COMMAND, "`", 0),
                         Token(kind, "", 0)
                     ])
 
@@ -404,10 +404,10 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
     def test_parse_basic_not(self):
         tokens = [
             Token(TokenKind.NOT, "!", 0),
-            Token(TokenKind.TICK, "`", 0),
             Token(TokenKind.COMMAND, "isfile", 0),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 0),
             Token(TokenKind.IDENT, "A", 0),
-            Token(TokenKind.TICK, "`", 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
         ]
 
         expected = ConditionalCommandExpression(
