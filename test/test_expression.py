@@ -144,7 +144,7 @@ class TestParseValue(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ValueCommandExpression(command, argument)
+        expected = ValueCommandExpression(command, IdentifierExpression(argument))
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -224,7 +224,7 @@ class TestParseConditionalExpression(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ConditionalCommandExpression(False, command, argument)
+        expected = ConditionalCommandExpression(False, command, IdentifierExpression(argument))
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -429,7 +429,7 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
         expected = ValueCommandExpression(
             Token(TokenKind.COMMAND, "dirname", 0),
-            Token(TokenKind.IDENT, "A", 0))
+            IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
         actual, offset = parse_value_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -464,7 +464,7 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
         expected = ConditionalCommandExpression(
             True,
             Token(TokenKind.COMMAND, "isfile", 0),
-            Token(TokenKind.IDENT, "A", 0))
+            IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
         actual, offset = parse_conditional_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -598,7 +598,7 @@ class TestValueCommandExpression(unittest.TestCase):
     def test_dirname(self):
         expr = ValueCommandExpression(
             Token(TokenKind.IDENT, "dirname", 0),
-            Token(TokenKind.IDENT, "/some/dir/and_a_file", 0))
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/dir/and_a_file", 0)))
 
         expected = "/some/dir"
         actual = expr.evaluate(dict())
@@ -607,8 +607,8 @@ class TestValueCommandExpression(unittest.TestCase):
 
     def test_basename(self):
         expr = ValueCommandExpression(
-            Token(TokenKind.IDENT, "basename", 0),
-            Token(TokenKind.IDENT, "/some/path/to/a/file", 0))
+            Token(TokenKind.COMMAND, "basename", 0),
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/path/to/a/file", 0)))
 
         expected = "file"
         actual = expr.evaluate(dict())
@@ -620,8 +620,8 @@ class TestValueCommandExpression(unittest.TestCase):
         basename = "file"
 
         expr = ValueCommandExpression(
-            Token(TokenKind.IDENT, "abspath", 0),
-            Token(TokenKind.IDENT, basename, 0))
+            Token(TokenKind.COMMAND, "abspath", 0),
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, basename, 0)))
 
         expected = os.path.join(cwd, basename)
         actual = expr.evaluate(dict())
@@ -636,8 +636,8 @@ class TestValueCommandExpression(unittest.TestCase):
         self.addCleanup(lambda: os.unsetenv(env_var))
 
         expr = ValueCommandExpression(
-            Token(TokenKind.IDENT, "env", 0),
-            Token(TokenKind.IDENT, env_var, 0))
+            Token(TokenKind.COMMAND, "env", 0),
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, env_var, 0)))
 
         expected = env_var_value
         actual = expr.evaluate(dict())
@@ -646,8 +646,8 @@ class TestValueCommandExpression(unittest.TestCase):
 
     def test_unknown_command(self):
         expr = ValueCommandExpression(
-            Token(TokenKind.IDENT, "unknown_commnd", 0),
-            Token(TokenKind.IDENT, "arg", 0))
+            Token(TokenKind.COMMAND, "unknown_command", 0),
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0)))
 
         with self.assertRaises(UnknownCommandException):
             expr.evaluate(dict())
@@ -658,7 +658,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.IDENT, "exists", 0),
-            Token(TokenKind.IDENT, __file__, 0))
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -670,7 +670,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.IDENT, "isfile", 0),
-            Token(TokenKind.IDENT, __file__, 0))
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -682,7 +682,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.IDENT, "isdir", 0),
-            Token(TokenKind.IDENT, os.path.dirname(__file__), 0))
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, os.path.dirname(__file__), 0)))
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -693,8 +693,8 @@ class TestConditionalCommandExpression(unittest.TestCase):
     def test_unknown_command(self):
         expr = ConditionalCommandExpression(
             False,
-            Token(TokenKind.IDENT, "unknown_commnd", 0),
-            Token(TokenKind.IDENT, "arg", 0))
+            Token(TokenKind.IDENT, "unknown_command", 0),
+            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0)))
 
         with self.assertRaises(UnknownCommandException):
             expr.evaluate(dict())

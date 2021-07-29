@@ -271,7 +271,7 @@ class ExistenceExpression(ConditionalExpression):
 class CommandExpression(abc.ABC):
     """An expression which will generate values based on inputs."""
 
-    def __init__(self, command: Token, argument: Token):
+    def __init__(self, command: Token, argument: ValueExpression):
         self.command = command
         self.argument = argument
 
@@ -284,15 +284,17 @@ class CommandExpression(abc.ABC):
 class ValueCommandExpression(CommandExpression, ValueExpression):
     """A command expression which will return a string value."""
 
-    def evaluate(self, _env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, str]) -> str:
+        arg = self.argument.evaluate(env)
+
         if self.command.body == "dirname":
-            return os.path.dirname(self.argument.body)
+            return os.path.dirname(arg)
         elif self.command.body == "basename":
-            return os.path.basename(self.argument.body)
+            return os.path.basename(arg)
         elif self.command.body == "abspath":
-            return os.path.abspath(self.argument.body)
+            return os.path.abspath(arg)
         elif self.command.body == "env":
-            return os.getenv(self.argument.body)
+            return os.getenv(arg)
 
         raise UnknownCommandException(self.command)
 
@@ -300,7 +302,7 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
 class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
     """A command expression which will return a boolean value."""
 
-    def __init__(self, negate: bool, command: Token, argument: Token):
+    def __init__(self, negate: bool, command: Token, argument: ValueExpression):
         super(ConditionalCommandExpression, self).__init__(command, argument)
         super(CommandExpression, self).__init__(negate, None, None)
 
@@ -313,13 +315,15 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
                 and self.operator == other.operator
                 and self.right == other.right)
 
-    def evaluate(self, _env: dict[str, str]) -> bool:
+    def evaluate(self, env: dict[str, str]) -> bool:
+        arg = self.argument.evaluate(env)
+
         if self.command.body == "exists":
-            result = os.path.exists(self.argument.body)
+            result = os.path.exists(arg)
         elif self.command.body == "isfile":
-            result = os.path.isfile(self.argument.body)
+            result = os.path.isfile(arg)
         elif self.command.body == "isdir":
-            result = os.path.isdir(self.argument.body)
+            result = os.path.isdir(arg)
         else:
             raise UnknownCommandException(self.command)
 
@@ -458,7 +462,7 @@ def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpres
     return ExistenceExpression(negate, left), offset
 
 
-def __parse_command_tokens(tokens: list[Token]) -> (Token, Token, int):
+def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int):
     """Parse the command and argument from a list of tokens"""
     if tokens[0].kind != TokenKind.COMMAND:
         raise UnexpectedTokenError(TokenKind.COMMAND, tokens[0].kind)
@@ -467,15 +471,16 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, Token, int):
     if tokens[1].kind != TokenKind.OPEN_PARENTHESE:
         raise UnexpectedTokenError(TokenKind.OPEN_PARENTHESE, tokens[1].kind)
 
-    # todo: parse ValueExpression
     if tokens[2].kind != TokenKind.IDENT:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[2].kind)
-    argument = tokens[2]
+    argument, token_count = __parse_value_expression_tokens(tokens[2:])
 
-    if tokens[3].kind != TokenKind.CLOSE_PARENTHESE:
-        raise UnexpectedTokenError(TokenKind.CLOSE, tokens[3].kind)
+    offset = token_count + 2
 
-    return command, argument, 4
+    if tokens[offset].kind != TokenKind.CLOSE_PARENTHESE:
+        raise UnexpectedTokenError(TokenKind.CLOSE_PARENTHESE, tokens[offset].kind)
+
+    return command, argument, offset + 1
 
 
 def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
