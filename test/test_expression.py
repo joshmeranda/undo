@@ -86,6 +86,24 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual([Token(TokenKind.COMMAND, "isfile", 1)], tokenize("isfile"))
         self.assertEqual([Token(TokenKind.COMMAND, "isdir", 1)], tokenize("isdir"))
 
+    def test_tokenize_string_literal(self):
+        expected = [
+            Token(TokenKind.STRING_LITERAL, "a string literal", 1)
+        ]
+
+        actual = tokenize("'a string literal'")
+
+        self.assertEqual(expected, actual)
+
+    def test_tokenize_string_literal_with_quote_escape(self):
+        expected = [
+            Token(TokenKind.STRING_LITERAL, "\'", 1)
+        ]
+
+        actual = tokenize("'\''")
+
+        self.assertEqual(expected, actual)
+
     def test_unrecognized_token(self):
         with self.assertRaises(ExpressionError):
             tokenize("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
@@ -148,9 +166,21 @@ class TestParseValue(unittest.TestCase):
             IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
             IdentifierExpression(Token(TokenKind.IDENT, "C", 0)))
 
-        actual, _ = parse_value_tokens(tokens)
+        actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
+        self.assertEqual(5, offset)
+
+    def test_string_literal(self):
+        tokens = [
+            Token(TokenKind.STRING_LITERAL, "literal", 0)
+        ]
+
+        expected = StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "literal", 0))
+        actual, offset = parse_value_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, offset)
 
     def test_unexpected_tokens(self):
         with self.assertRaises(ParseError):
@@ -220,6 +250,7 @@ class TestParseConditionalExpression(unittest.TestCase):
 parse_identifier_tokens = expression.__parse_identifier_expression_tokens
 parse_ternary_tokens = expression.__parse_ternary_expression_tokens
 parse_existence_tokens = expression.__parse_existence_expression_tokens
+parse_string_literal_tokens = expression.__parse_string_literal_expression_tokens
 
 parse_value_command_tokens = expression.__parse_value_command_expression_tokens
 parse_conditional_command_tokens = expression.__parse_conditional_command_expression_tokens
@@ -304,7 +335,6 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
         self.assertEqual(expected, actual)
         self.assertEqual(6, offset)
 
-    @unittest.skip("string literals not yet implemented")
     def test_nested_ternary(self):
         tokens = [
             Token(TokenKind.IDENT, "A", 0),
@@ -314,6 +344,8 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             Token(TokenKind.IDENT, "B", 0),
             Token(TokenKind.TERNARY_IF, "?", 0),
             Token(TokenKind.IDENT, "B", 0),
+            Token(TokenKind.TERNARY_ELSE, ":", 0),
+            Token(TokenKind.STRING_LITERAL, "", 0),
 
             Token(TokenKind.TERNARY_ELSE, ":", 0),
             Token(TokenKind.IDENT, "C", 0),
@@ -324,12 +356,31 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             TernaryExpression(
                 ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "B", 0))),
                 IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
-                None),
+                StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "", 0))),
             IdentifierExpression(Token(TokenKind.IDENT, "C", 0)))
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(8, offset)
+        self.assertEqual(9, offset)
+
+
+class TestParseStringLiteralExpressionTokens(unittest.TestCase):
+    def test_basic(self):
+        tokens = [
+            Token(TokenKind.STRING_LITERAL, "literal", 0)
+        ]
+
+        expected = StringLiteralExpression(tokens[0])
+        actual, offset = parse_string_literal_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, offset)
+
+    def test_unexpected_token(self):
+        for kind in list(TokenKind):
+            if kind != TokenKind.STRING_LITERAL:
+                with self.assertRaises(ParseError):
+                    parse_string_literal_tokens([Token(kind, "", 0)])
 
 
 class TestParseExistenceTokens(unittest.TestCase):

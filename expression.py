@@ -12,12 +12,11 @@ import typing
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-# todo: add string literals
 # todo: add ellipse (ie '...') for group command  calls
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
 
-    TICK = enum.auto()
+    STRING_LITERAL = enum.auto()
 
     OPEN_PARENTHESE = enum.auto()
     CLOSE_PARENTHESE = enum.auto()
@@ -45,7 +44,8 @@ class Token:
 
 __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
-__TOKEN_REGEX = re.compile(rf" *({__COMMAND_REGEX}|{__IDENT_REGEX}|\?|:|&&|\|\||!|`)")
+__STRING_LITERAL_REGEX = r"'.*'"
+__TOKEN_REGEX = re.compile(rf" *({__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|\?|:|&&|\|\||!)")
 
 
 def __tokenize(content) -> list[Token]:
@@ -68,9 +68,7 @@ def __tokenize(content) -> list[Token]:
 
         col = offset + 1 + m.end() - len(body)
 
-        if body == "`":
-            kind = TokenKind.TICK
-        elif body == "?":
+        if body == "?":
             kind = TokenKind.TERNARY_IF
         elif body == ":":
             kind = TokenKind.TERNARY_ELSE
@@ -86,6 +84,9 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.CLOSE_PARENTHESE
         elif body in __COMMAND_REGEX.split("|"):
             kind = TokenKind.COMMAND
+        elif body[0] == "'":
+            kind = TokenKind.STRING_LITERAL
+            body = body[1:-1]
         else:
             kind = TokenKind.IDENT
 
@@ -112,7 +113,7 @@ class TokenError(ExpressionError):
     """Raise for any error relating to token parsing."""
     def __init__(self, token: Token, message: str):
         self.token = token
-        super().__init__(f"{message} at col {token.col}: '{token.body}")
+        super().__init__(f"{message} at col {token.col}: '{token.body}'")
 
 
 class ParseError(ExpressionError):
@@ -231,6 +232,18 @@ class TernaryExpression(ValueExpression):
             return self.else_value.evaluate(env) if self.else_value is not None else ""
 
 
+class StringLiteralExpression(ValueExpression):
+    def __init__(self, token: Token):
+        self.token = token
+
+    def __eq__(self, other):
+        return (isinstance(other, StringLiteralExpression)
+                and self.token == other.token)
+
+    def evaluate(self, env: dict[str, str]) -> str:
+        return self.token.body
+
+
 class ExistenceExpression(ConditionalExpression):
     """An expression which evaluates if a value for the given identifier has been set."""
 
@@ -317,6 +330,7 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
 # Parsing methods                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def __parse_tokens(tokens: list[Token]) -> UndoExpression:
     """Parse an UndoExpression from a list of tokens."""
     try:
@@ -330,12 +344,17 @@ def __parse_tokens(tokens: list[Token]) -> UndoExpression:
 def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, int):
     try:
         return __parse_value_command_expression_tokens(tokens)
-    except (ParseError, IndexError) as err:
+    except (ParseError, IndexError):
+        pass
+
+    try:
+        return __parse_string_literal_expression_tokens(tokens)
+    except (ParseError, IndexError):
         pass
 
     try:
         return __parse_ternary_expression_tokens(tokens)
-    except (ParseError, IndexError) as err:
+    except (ParseError, IndexError):
         pass
 
     try:
@@ -408,6 +427,14 @@ def __parse_ternary_expression_tokens(tokens: list[Token]) -> (TernaryExpression
         offset += token_count
 
     return TernaryExpression(condition, if_value, else_value), offset
+
+
+def __parse_string_literal_expression_tokens(tokens: list[Token]) -> (StringLiteralExpression, int):
+    """Parse a StringLiteralExpression from a list of tokens."""
+    if tokens[0].kind != TokenKind.STRING_LITERAL:
+        raise UnexpectedTokenError(TokenKind.STRING_LITERAL, tokens[0].kind)
+
+    return StringLiteralExpression(tokens[0]), 1
 
 
 def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpression, int):
