@@ -30,6 +30,8 @@ class TokenKind(enum.Enum):
     TERNARY_IF = enum.auto()
     TERNARY_ELSE = enum.auto()
 
+    ACCESSOR = enum.auto()
+
     # Unknown iss only used to allow for passing a token to TokenError.
     UNKNOWN = enum.auto()
 
@@ -45,7 +47,7 @@ class Token:
 __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
 __STRING_LITERAL_REGEX = r"'.*'"
-__TOKEN_REGEX = re.compile(rf" *({__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|\?|:|&&|\|\||!)")
+__TOKEN_REGEX = re.compile(rf" *({__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|\$|\?|:|&&|\|\||!)")
 
 
 def __tokenize(content) -> list[Token]:
@@ -82,6 +84,8 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.OPEN_PARENTHESE
         elif body == ")":
             kind = TokenKind.CLOSE_PARENTHESE
+        elif body == "$":
+            kind = TokenKind.ACCESSOR
         elif body in __COMMAND_REGEX.split("|"):
             kind = TokenKind.COMMAND
         elif body[0] == "'":
@@ -194,21 +198,19 @@ class ConditionalExpression(UndoExpression):
 # sub-classes
 
 
-class IdentifierExpression(ValueExpression):
+class AccessorExpression(ValueExpression):
     """A simple expression which will resolve to a value given an identifier."""
 
     def __init__(self, identifier: Token):
         self.identifier = identifier
 
     def __eq__(self, other):
-        return(isinstance(other, IdentifierExpression)
+        return(isinstance(other, AccessorExpression)
                and self.identifier == other.identifier)
 
     def evaluate(self, env: dict[str, str]) -> str:
         """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env."""
-        value = env.get(self.identifier.body)
-
-        return "" if value is None else value
+        return env.setdefault(self.identifier.body, "")
 
 
 class TernaryExpression(ValueExpression):
@@ -247,7 +249,7 @@ class StringLiteralExpression(ValueExpression):
 class ExistenceExpression(ConditionalExpression):
     """An expression which evaluates if a value for the given identifier has been set."""
 
-    def __init__(self, negate: bool, identifier: IdentifierExpression,
+    def __init__(self, negate: bool, identifier: Token,
                  operator: typing.Optional[Token] = None, right: typing.Optional[ConditionalExpression] = None):
         super().__init__(negate, operator, right)
         self.identifier = identifier
@@ -260,9 +262,9 @@ class ExistenceExpression(ConditionalExpression):
 
     def evaluate(self, env: dict[str, str]) -> bool:
         if self.negate:
-            return self.identifier.evaluate(env) == ""
+            return env.setdefault(self.identifier.body, "") == ""
         else:
-            return self.identifier.evaluate(env) != ""
+            return env.setdefault(self.identifier.body, "") != ""
 
 
 # command-expressions
@@ -346,9 +348,10 @@ def __parse_tokens(tokens: list[Token]) -> UndoExpression:
 
 
 def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, int):
+    # todo: could be optimized by checking first token type and calling the appropriate parser method
     try:
         return __parse_value_command_expression_tokens(tokens)
-    except (ParseError, IndexError):
+    except (ParseError, IndexError) as err:
         pass
 
     try:
@@ -362,7 +365,7 @@ def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, in
         pass
 
     try:
-        return __parse_identifier_expression_tokens(tokens)
+        return __parse_accessor_expression_tokens(tokens)
     except (ParseError, IndexError):
         pass
 
@@ -398,14 +401,15 @@ def __parse_conditional_expression_tokens(tokens: list[Token]) -> (ConditionalEx
     return conditional, offset
 
 
-def __parse_identifier_expression_tokens(tokens: list[Token]) -> (IdentifierExpression, int):
+def __parse_accessor_expression_tokens(tokens: list[Token]) -> (AccessorExpression, int):
     """Parse a ValueExpression from a list of tokens (should consist of a single identifier)."""
-    token = tokens[0]
+    if tokens[0].kind != TokenKind.ACCESSOR:
+        raise UnexpectedTokenError(TokenKind.ACCESSOR, tokens[0].kind)
 
-    if token.kind != TokenKind.IDENT:
-        raise UnexpectedTokenError(TokenKind.IDENT, token.kind)
+    if tokens[1].kind != TokenKind.IDENT:
+        raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
 
-    return IdentifierExpression(token), 1
+    return AccessorExpression(tokens[1]), 2
 
 
 def __parse_ternary_expression_tokens(tokens: list[Token]) -> (TernaryExpression, int):
@@ -442,24 +446,26 @@ def __parse_string_literal_expression_tokens(tokens: list[Token]) -> (StringLite
 
 
 def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpression, int):
-    token = tokens[0]
     """Parse an ExistenceExpression from a list of tokens.
 
     Grammar:
-        EXISTENCE_EXPR = '!' ? VALUE_EXPR
+        EXISTENCE_EXPR = '!' ? IDENT
     """
     negate = False
     offset = 0
 
-    if token.kind == TokenKind.NOT:
+    if tokens[0].kind == TokenKind.NOT:
         negate = True
         offset += 1
 
-    left, token_count = __parse_identifier_expression_tokens(tokens[offset:])
+    if tokens[offset].kind != TokenKind.IDENT:
+        raise UnexpectedTokenError(TokenKind.IDENT, tokens[offset].kind)
 
-    offset += token_count
+    ident = tokens[offset]
 
-    return ExistenceExpression(negate, left), offset
+    offset += 1
+
+    return ExistenceExpression(negate, ident), offset
 
 
 def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int):
@@ -471,8 +477,6 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int)
     if tokens[1].kind != TokenKind.OPEN_PARENTHESE:
         raise UnexpectedTokenError(TokenKind.OPEN_PARENTHESE, tokens[1].kind)
 
-    if tokens[2].kind != TokenKind.IDENT:
-        raise UnexpectedTokenError(TokenKind.IDENT, tokens[2].kind)
     argument, token_count = __parse_value_expression_tokens(tokens[2:])
 
     offset = token_count + 2
@@ -486,7 +490,7 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int)
 def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
     command, argument, token_count = __parse_command_tokens(tokens)
 
-    return ValueCommandExpression(command, argument), 4
+    return ValueCommandExpression(command, argument), token_count
 
 
 def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (ConditionalCommandExpression, int):

@@ -104,6 +104,15 @@ class TestTokenize(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_tokenize_accessor(self):
+        expected = [
+            Token(TokenKind.ACCESSOR, "$", 1),
+            Token(TokenKind.IDENT, "IDENT", 2)
+        ]
+        actual = tokenize("$IDENT")
+
+        self.assertListEqual(expected, actual)
+
     def test_unrecognized_token(self):
         with self.assertRaises(ExpressionError):
             tokenize("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
@@ -122,16 +131,17 @@ parse_conditional_tokens = expression.__parse_conditional_expression_tokens
 
 
 class TestParseValue(unittest.TestCase):
-    def test_identifier_expression(self):
+    def test_accessor_expression(self):
         tokens = [
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "A", 0),
         ]
 
-        expected = IdentifierExpression(Token(TokenKind.IDENT, "A", 0))
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(1, offset)
+        self.assertEqual(2, offset)
 
     def test_value_command_expression(self):
         command = Token(TokenKind.COMMAND, "basename", 0)
@@ -140,36 +150,41 @@ class TestParseValue(unittest.TestCase):
         tokens = [
             command,
             Token(TokenKind.OPEN_PARENTHESE, '(', 0),
+
+            Token(TokenKind.ACCESSOR, "$", 0),
             argument,
+
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ValueCommandExpression(command, IdentifierExpression(argument))
+        expected = ValueCommandExpression(command, AccessorExpression(argument))
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(4, offset)
+        self.assertEqual(5, offset)
 
     def test_ternary_expression(self):
         tokens = [
             Token(TokenKind.IDENT, "A", 0),
 
             Token(TokenKind.TERNARY_IF, "?", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "B", 0),
 
             Token(TokenKind.TERNARY_ELSE, ":", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "C", 0),
         ]
 
         expected = TernaryExpression(
-            ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))),
-            IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
-            IdentifierExpression(Token(TokenKind.IDENT, "C", 0)))
+            ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
 
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(5, offset)
+        self.assertEqual(7, offset)
 
     def test_string_literal(self):
         tokens = [
@@ -207,7 +222,7 @@ class TestParseConditionalExpression(unittest.TestCase):
             Token(TokenKind.IDENT, "A", 0),
         ]
 
-        expected = ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
+        expected = ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -220,15 +235,18 @@ class TestParseConditionalExpression(unittest.TestCase):
         tokens = [
             command,
             Token(TokenKind.OPEN_PARENTHESE, '(', 0),
+
+            Token(TokenKind.ACCESSOR, "$", 0),
             argument,
+
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ConditionalCommandExpression(False, command, IdentifierExpression(argument))
+        expected = ConditionalCommandExpression(False, command, AccessorExpression(argument))
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(4, offset)
+        self.assertEqual(5, offset)
 
     def test_chain_conditional(self):
         tokens = [
@@ -238,16 +256,16 @@ class TestParseConditionalExpression(unittest.TestCase):
             Token(TokenKind.IDENT, "B", 0),
         ]
 
-        expected = ExistenceExpression(True, IdentifierExpression(Token(TokenKind.IDENT, "A", 0)),
+        expected = ExistenceExpression(True, Token(TokenKind.IDENT, "A", 0),
                                        operator=Token(TokenKind.AND, "&&", 0),
-                                       right=ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "B", 0))))
+                                       right=ExistenceExpression(False, Token(TokenKind.IDENT, "B", 0)))
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
         self.assertEqual(4, offset)
 
 
-parse_identifier_tokens = expression.__parse_identifier_expression_tokens
+parse_accessor_tokens = expression.__parse_accessor_expression_tokens
 parse_ternary_tokens = expression.__parse_ternary_expression_tokens
 parse_existence_tokens = expression.__parse_existence_expression_tokens
 parse_string_literal_tokens = expression.__parse_string_literal_expression_tokens
@@ -256,23 +274,24 @@ parse_value_command_tokens = expression.__parse_value_command_expression_tokens
 parse_conditional_command_tokens = expression.__parse_conditional_command_expression_tokens
 
 
-class TestParseIdentifierTokens(unittest.TestCase):
+class TestParseAccessorTokens(unittest.TestCase):
     def test_basic(self):
         tokens = [
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "A", 0)
         ]
 
-        expected = IdentifierExpression(tokens[0])
-        actual, offset = parse_identifier_tokens(tokens)
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
+        actual, offset = parse_accessor_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(1, offset)
+        self.assertEqual(2, offset)
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
-            if kind != TokenKind.IDENT:
+            if kind != TokenKind.ACCESSOR:
                 with self.assertRaises(ParseError):
-                    parse_identifier_tokens([Token(kind, "", 0)])
+                    parse_accessor_tokens([Token(kind, "", 0)])
 
 
 class TestParseTernaryExpressionTokens(unittest.TestCase):
@@ -281,38 +300,42 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             Token(TokenKind.IDENT, "A", 0),
 
             Token(TokenKind.TERNARY_IF, "?", 0),
+
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "B", 0),
 
             Token(TokenKind.TERNARY_ELSE, ":", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "C", 0),
         ]
 
         expected = TernaryExpression(
-            ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))),
-            IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
-            IdentifierExpression(Token(TokenKind.IDENT, "C", 0)))
+            ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
 
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(5, offset)
+        self.assertEqual(7, offset)
 
     def test_basic_abbreviated_ternary(self):
         tokens = [
             Token(TokenKind.IDENT, "A", 0),
 
             Token(TokenKind.TERNARY_IF, "?", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "B", 0),
         ]
 
         expected = TernaryExpression(
-            ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))),
-            IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
+            ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
             None)
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(3, offset)
+        self.assertEqual(4, offset)
 
     def test_complex_conditional(self):
         tokens = [
@@ -322,18 +345,20 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             Token(TokenKind.IDENT, "B", 0),
 
             Token(TokenKind.TERNARY_IF, "?", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "B", 0),
         ]
 
         expected = TernaryExpression(
-            ExistenceExpression(True, IdentifierExpression(Token(TokenKind.IDENT, "A", 0)),
-                                operator=Token(TokenKind.AND, "&&", 0), right=ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "B", 0)))),
-            IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
+            ExistenceExpression(True, Token(TokenKind.IDENT, "A", 0),
+                                operator=Token(TokenKind.AND, "&&", 0),
+                                right=ExistenceExpression(False, Token(TokenKind.IDENT, "B", 0))),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
             None)
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(6, offset)
+        self.assertEqual(7, offset)
 
     def test_nested_ternary(self):
         tokens = [
@@ -343,25 +368,28 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             # nested ternary
             Token(TokenKind.IDENT, "B", 0),
             Token(TokenKind.TERNARY_IF, "?", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
+
             Token(TokenKind.IDENT, "B", 0),
             Token(TokenKind.TERNARY_ELSE, ":", 0),
             Token(TokenKind.STRING_LITERAL, "", 0),
 
             Token(TokenKind.TERNARY_ELSE, ":", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "C", 0),
         ]
 
         expected = TernaryExpression(
-            ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))),
+            ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
             TernaryExpression(
-                ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "B", 0))),
-                IdentifierExpression(Token(TokenKind.IDENT, "B", 0)),
+                ExistenceExpression(False, Token(TokenKind.IDENT, "B", 0)),
+                AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
                 StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "", 0))),
-            IdentifierExpression(Token(TokenKind.IDENT, "C", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(9, offset)
+        self.assertEqual(11, offset)
 
 
 class TestParseStringLiteralExpressionTokens(unittest.TestCase):
@@ -384,38 +412,36 @@ class TestParseStringLiteralExpressionTokens(unittest.TestCase):
 
 
 class TestParseExistenceTokens(unittest.TestCase):
-    def parse_basic(self):
+    def test_parse_basic(self):
         tokens = [
             Token(TokenKind.IDENT, "A", 0)
         ]
 
         expected = ExistenceExpression(
-            False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))
-        )
+            False, Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_existence_tokens(tokens)
 
         self.assertEqual(expected, actual)
         self.assertEqual(1, offset)
 
-    def parse_basic_negate(self):
+    def test_parse_basic_negate(self):
         tokens = [
             Token(TokenKind.NOT, "!", 0),
             Token(TokenKind.IDENT, "A", 0),
         ]
 
         expected = ExistenceExpression(
-            True, IdentifierExpression(Token(TokenKind.IDENT, "A", 0))
-        )
+            True, Token(TokenKind.IDENT, "A", 0))
         actual, offset = parse_existence_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(1, offset)
+        self.assertEqual(2, offset)
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
-            if kind != TokenKind.IDENT:
+            if kind not in {TokenKind.IDENT, TokenKind.NOT}:
                 with self.assertRaises(ParseError):
-                    parse_identifier_tokens([Token(kind, "", 0)])
+                    parse_existence_tokens([Token(kind, "", 0)])
 
 
 class TestParseCommandExpressionTokens(unittest.TestCase):
@@ -423,17 +449,18 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
         tokens = [
             Token(TokenKind.COMMAND, "dirname", 0),
             Token(TokenKind.OPEN_PARENTHESE, "(", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "A", 0),
             Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
         ]
 
         expected = ValueCommandExpression(
             Token(TokenKind.COMMAND, "dirname", 0),
-            IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "A", 0)))
         actual, offset = parse_value_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(4, offset)
+        self.assertEqual(5, offset)
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
@@ -457,6 +484,7 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
             Token(TokenKind.NOT, "!", 0),
             Token(TokenKind.COMMAND, "isfile", 0),
             Token(TokenKind.OPEN_PARENTHESE, "(", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
             Token(TokenKind.IDENT, "A", 0),
             Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
         ]
@@ -464,11 +492,11 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
         expected = ConditionalCommandExpression(
             True,
             Token(TokenKind.COMMAND, "isfile", 0),
-            IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "A", 0)))
         actual, offset = parse_conditional_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(5, offset)
+        self.assertEqual(6, offset)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -476,14 +504,14 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-class TestIdentifierExpression(unittest.TestCase):
+class TestAccessorExpression(unittest.TestCase):
     def setUp(self) -> None:
         self.env = {
             "A": "some_value"
         }
 
     def test_exists(self):
-        expr = IdentifierExpression(Token(TokenKind.IDENT, "A", 0))
+        expr = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
 
         expected = "some_value"
         actual = expr.evaluate(self.env)
@@ -491,7 +519,7 @@ class TestIdentifierExpression(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_does_not_exist(self):
-        expr = IdentifierExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
+        expr = AccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
 
         expected = ""
         actual = expr.evaluate(self.env)
@@ -574,22 +602,22 @@ class TestExistenceExpression(unittest.TestCase):
         }
 
     def test_exists(self):
-        expr = ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
+        expr = ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0))
 
         self.assertTrue(expr.evaluate(self.env))
 
     def test_exists_negate(self):
-        expr = ExistenceExpression(True, IdentifierExpression(Token(TokenKind.IDENT, "A", 0)))
+        expr = ExistenceExpression(True, Token(TokenKind.IDENT, "A", 0))
 
         self.assertFalse(expr.evaluate(self.env))
 
     def test_does_not_exist(self):
-        expr = ExistenceExpression(False, IdentifierExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0)))
+        expr = ExistenceExpression(False, Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
 
         self.assertFalse(expr.evaluate(self.env))
 
     def test_does_not_exist_negate(self):
-        expr = ExistenceExpression(True, IdentifierExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0)))
+        expr = ExistenceExpression(True, Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
 
         self.assertTrue(expr.evaluate(self.env))
 
