@@ -17,6 +17,7 @@ class TokenKind(enum.Enum):
     IDENT = enum.auto()
 
     STRING_LITERAL = enum.auto()
+    STRING_EXPANSION = enum.auto()
 
     OPEN_PARENTHESE = enum.auto()
     CLOSE_PARENTHESE = enum.auto()
@@ -38,7 +39,9 @@ class TokenKind(enum.Enum):
 
 @dataclasses.dataclass
 class Token:
-    """Represents a single token in an expression."""
+    """Represents a single token in an expression.
+    todo: todo add support for multiple lines for cleaner expressions
+    """
     kind: TokenKind
     body: str
     col: int
@@ -47,7 +50,9 @@ class Token:
 __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
 __STRING_LITERAL_REGEX = r"'.*'"
-__TOKEN_REGEX = re.compile(rf" *({__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|\$|\?|:|&&|\|\||!)")
+__STRING_EXPANSION_REGEX = r"\".*\""
+__SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!"
+__TOKEN_REGEX = re.compile(rf"\s*({__STRING_EXPANSION_REGEX}|{__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|{__SYMBOL_REGEX})")
 
 
 def __tokenize(content) -> list[Token]:
@@ -90,6 +95,9 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.COMMAND
         elif body[0] == "'":
             kind = TokenKind.STRING_LITERAL
+            body = body[1:-1]
+        elif body[0] == "\"":
+            kind = TokenKind.STRING_EXPANSION
             body = body[1:-1]
         else:
             kind = TokenKind.IDENT
@@ -244,6 +252,20 @@ class StringLiteralExpression(ValueExpression):
 
     def evaluate(self, env: dict[str, str]) -> str:
         return self.token.body
+
+
+class StringExpansionExpression(ValueExpression):
+    def __init__(self, token: Token):
+        self.__token = token
+
+    def evaluate(self, env: dict[str, str]) -> str:
+        idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", self.__token.body))
+        expanded = self.__token.body
+
+        for ident in idents:
+            expanded = expanded.replace(ident, env.setdefault(ident[1:], ""))
+
+        return expanded
 
 
 class ExistenceExpression(ConditionalExpression):
@@ -443,6 +465,14 @@ def __parse_string_literal_expression_tokens(tokens: list[Token]) -> (StringLite
         raise UnexpectedTokenError(TokenKind.STRING_LITERAL, tokens[0].kind)
 
     return StringLiteralExpression(tokens[0]), 1
+
+
+def __parse_sting_expansion_expression_tokens(tokens: list[Token]) -> (StringExpansionExpression, int):
+    """Parse a StringExpansionExpression from a list of tokens."""
+    if tokens[0].kind != TokenKind.STRING_EXPANSION:
+        raise UnexpectedTokenError(TokenKind.STRING_EXPANSION, tokens[0].kind)
+
+    return StringExpansionExpression(tokens[0]), 1
 
 
 def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpression, int):

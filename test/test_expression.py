@@ -595,6 +595,43 @@ class TestTernaryExpression(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
+class TestStringExpansion(unittest.TestCase):
+    def test_no_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "no expansion", 0))
+
+        expected = "no expansion"
+        actual = expr.evaluate(dict())
+
+        self.assertEqual(expected, actual)
+
+    def test_single_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$EXPAND_ME please", 0))
+
+        expected = "expand me please"
+        actual = expr.evaluate({"EXPAND_ME": "expand me"})
+
+        self.assertEqual(expected, actual)
+
+    def test_multiple_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$HELLO $WORLD", 0))
+
+        expected = "Hello, world!"
+        actual = expr.evaluate({
+            "HELLO": "Hello,",
+            "WORLD": "world!",
+        })
+
+        self.assertEqual(expected, actual)
+
+    def test_empty_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is $EMPTY", 0))
+
+        expected = "This expansion is "
+        actual = expr.evaluate(dict())
+
+        self.assertEqual(expected, actual)
+
+
 class TestExistenceExpression(unittest.TestCase):
     def setUp(self):
         self.env = {

@@ -7,8 +7,6 @@ import typing
 
 class _UndoArgumentParser(argparse.ArgumentParser):
     """Simple child class of ArgumentParser designed to allow for handling argument parsing error."""
-    def exit(self, status=0, message=None):
-        """Do nothing..."""
 
     def error(self, message):
         raise argparse.ArgumentError(None, message)
@@ -78,6 +76,7 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
     return base_parser
 
 
+# todo: substitute registry for iterative rather than OOP method (keep pattern_to_argparse)
 class UndoRegistry:
     def __init__(self):
         # todo: consider segmenting by command first for faster lookup in `undo`

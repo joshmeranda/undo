@@ -16,7 +16,7 @@
 # - ...: argument takes one or more arguments
 # - : argument takes exactly one value
 
-Also see the use of a
+# Also see the use of a
 # ternary conditional. Here `DIR ? $DIR/example : ~/example` checks if a value was specified for DIR, and if so it will
 # prepend that value to the
 example do [DIR:--dir,-d] [?:--verbose] -> rm [VERBOSE ? --verbose] [DIR ? $DIR/example : ~/example]

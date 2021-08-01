@@ -66,7 +66,8 @@ def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.O
     value of the `SHELL` environment variable is used. If `file` is not specified, the default file paths for the shell
     is used.
 
-    Note that the commands returned by this method will be those returned by the given (or determined) shell.
+    Note that the commands returned by this method will be those returned by the given (or determined) shell builtin
+    history command.
 
     :param shell: the name of the shell without any leading path elements ('bash' rather than '/usr/bin/bash').
     :param limit: the maximum amount off history entries too return.
