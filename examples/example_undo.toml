@@ -1,3 +1,9 @@
+supported-shells = [
+    "fish",
+    "bash",
+    "sh"
+]
+
 # This is an example undo file for a command called example, creates a file called 'example' in a directory, or $HOME if
 # not provided, or deletes it:
 #
@@ -15,25 +21,36 @@
 # - ?: argument is a flag and takes no value
 # - ...: argument takes one or more arguments
 # - : argument takes exactly one value
+[[entry]]
+cmd = 'example do [DIR:--dir,-d] [?:--verbose]'
+undo = "rm % VERBOSE ? --verbose % \\
+           % DIR ? \"$DIR/example\" : '~/example' %"
 
 # Also see the use of a
 # ternary conditional. Here `DIR ? $DIR/example : ~/example` checks if a value was specified for DIR, and if so it will
 # prepend that value to the
-example do [DIR:--dir,-d] [?:--verbose] -> rm [VERBOSE ? --verbose] [DIR ? $DIR/example : ~/example]
+[[entry]]
+cmd = "example do [DIR:--dir,-d] [?:--verbose]"
+undo = "rm % VERBOSE ? --verbose % \\
+            % DIR ? $DIR : '~' %/example"
 
 # WARNING: in most cases something like this is impractical because there is no guarantee that there was no data written
 # to the 'example' file; however, since the example command does not write to teh of 'example'  file after writing it
 # and it is unlikely for any truly useful software to rely on such a file it is "sage" to recreate it here.
-example dont [DIR:--dir,-d] -> test ! -example && touch %DIR ? $DIR/example : ~/example%
+[[entry]]
+cmd = "example dont [DIR:--dir,-d]"
+undo = "test ! -example && touch % $DIR ? $DIR : '~' %/example"
 
 # Here you can see a more complicated use case where you need to add some additional log to you undo pattern. Since the
 # `mv` command may be use d to wither rename a file or move it to a new directory we must first check if the DST is a
 # directory and move the file back to its original location, otherwise it was a rename and we can simply rename it. This
 # can get tricky since we ned to conform to posix here so you undo rule1 can be used cross multiple platforms rather
 # than just one shell like bash.
-mv <SRC> <DST> -> test -d %DST% \
-        && mv %DST%/$(basename %SRC%) $(dirname %SRC$) \
-        || mv %DST% %SRC%
+[[entry]]
+cmd = "mv <SRC> <DST>"
+undo = "test -d % $DST % \\
+        && mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %) \\
+        || mv % $DST % % $SRC %"
 
 # There is a pretty big flaw with the example above ; however, the `mv` command is able to take multiple arguments for
 # the SRC positional parameter. To resolve this, add an ellipse (ie "...") to the end of the argument name, this will
@@ -42,6 +59,8 @@ mv <SRC> <DST> -> test -d %DST% \
 # if you reference each item individually (even just once) you will force the command to be run once for each element,
 # so it is preferable to use the list access whenever possible.
 # todo: allow specifying a delimiter for the list values (often a space but can also be a comma)
-mv <SRC...> <DST> -> test -d %DST% \
-        && mv %DST%/$(basename %SRC%) $(dirname %SRC$) \
-        || mv %DST% %SRC%
+[[entry]]
+cmd = "mv <SRC...> <DST>"
+undo = "test -d % $DST % \\
+        && mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %) \\
+        || mv % $DST % % $SRC %"
