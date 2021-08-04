@@ -30,7 +30,7 @@ class TestUndoRegistry(unittest.TestCase):
         undo = "untest"
         """))
 
-        expected = [(argparse.Namespace(), "untest")]
+        expected = [(dict(), "untest")]
 
         actual = registry.resolve("test")
 
@@ -52,7 +52,7 @@ class TestUndoRegistry(unittest.TestCase):
         undo = "another_wrong"
         """))
 
-        expected = [(argparse.Namespace(), "untest")]
+        expected = [(dict(), "untest")]
         actual = registry.resolve("test")
 
         self.assertEqual(expected, actual)
@@ -77,7 +77,7 @@ class TestUndoRegistry(unittest.TestCase):
         undo = "test-wrong"
         """))
 
-        expected = [(argparse.Namespace(ALL=True), "untest --all")]
+        expected = [({"ALL": True}, "untest --all")]
 
         actual = registry.resolve("test --all")
 
@@ -99,7 +99,8 @@ class TestUndoRegistry(unittest.TestCase):
         undo = "untest --some"
         """))
 
-        expected = [(argparse.Namespace(ALL=False), "untest --all"), (argparse.Namespace(SOME=False), "untest --some")]
+        expected = [({"ALL": False}, "untest --all"),
+                    ({"SOME": False}, "untest --some")]
 
         actual = registry.resolve("test")
 
@@ -134,15 +135,15 @@ class TestResolve(unittest.TestCase):
         os.environ["SHELL"] = "/usr/bin/bash"
 
     def test_basic_no_search_all(self):
-        expected = [(argparse.Namespace(), "untest")]
+        expected = [(dict(), "untest")]
         actual = resolve.resolve("test", [RESOURCE_DIR_PATH])
 
         self.assertListEqual(expected, actual)
 
     def test_search_all(self):
         expected = [
-            (argparse.Namespace(), "untest"),
-            (argparse.Namespace(), "untest"),
+            (dict(), "untest"),
+            (dict(), "untest"),
         ]
         actual = resolve.resolve("test", [RESOURCE_DIR_PATH], True)
 

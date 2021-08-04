@@ -41,7 +41,7 @@ class __UndoRegistry:
 
         return shell in self.__shells
 
-    def resolve(self, command: str) -> list[(argparse.Namespace, str)]:
+    def resolve(self, command: str) -> list[(dict, str)]:
         """Resolve the given command with the registered undo pattern.
 
         :param command: the command to register.
@@ -49,7 +49,7 @@ class __UndoRegistry:
         """
         command, *argv = shlex.split(command)
 
-        undos: list[(argparse.Namespace, str)] = list()
+        undos: list[(dict, str)] = list()
 
         for entry in self.__entries:
             parser = pattern.pattern_to_argparse(entry[self.__ENTRY_CMD])
@@ -59,14 +59,14 @@ class __UndoRegistry:
                     namespace = parser.parse_args(argv)
                     undo = entry[self.__ENTRY_UNDO]
 
-                    undos.append((namespace, undo))
+                    undos.append((vars(namespace), undo))
                 except argparse.ArgumentError as err:
                     pass
 
         return undos
 
 
-def __resolve_in_dir(include_dir: str, command: str, search_all: bool = False) -> list[(argparse.Namespace, str)]:
+def __resolve_in_dir(include_dir: str, command: str, search_all: bool = False) -> list[(dict, str)]:
     """Attempt to resolve the command from the undo files located in the given directory path.
 
     Please note that this method will not delve into sub directories, and will only search files with the 'undo'
@@ -102,7 +102,7 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool = False) -
     return undos
 
 
-def resolve(command: str, include_dirs: list[str], search_all: bool = False) -> list[(argparse.Namespace, str)]:
+def resolve(command: str, include_dirs: list[str], search_all: bool = False) -> list[(dict, str)]:
     """Resolve the given command to the appropriate undo command.
 
 
