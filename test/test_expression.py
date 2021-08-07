@@ -104,6 +104,24 @@ class TestTokenize(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_tokenize_string_expansion(self):
+        expected = [
+            Token(TokenKind.STRING_EXPANSION, "a string literal", 1)
+        ]
+
+        actual = tokenize("\"a string literal\"")
+
+        self.assertEqual(expected, actual)
+
+    def test_tokenize_string_expansion_with_quote_escape(self):
+        expected = [
+            Token(TokenKind.STRING_EXPANSION, "\"", 1)
+        ]
+
+        actual = tokenize('"\""')
+
+        self.assertEqual(expected, actual)
+
     def test_tokenize_accessor(self):
         expected = [
             Token(TokenKind.ACCESSOR, "$", 1),
@@ -192,6 +210,17 @@ class TestParseValue(unittest.TestCase):
         ]
 
         expected = StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "literal", 0))
+        actual, offset = parse_value_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, offset)
+
+    def test_string_expansion(self):
+        tokens = [
+            Token(TokenKind.STRING_EXPANSION, "expand me", 0)
+        ]
+
+        expected = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "expand me", 0))
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)

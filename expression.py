@@ -160,7 +160,7 @@ class UndoExpression(abc.ABC):
     """Represents an expression resulting in a string command."""
 
     def __repr__(self):
-        return f"{type(self).__name__}({', '.join([f'{name}: {repr(value)}' for name, value in vars(self).items()])})"
+        return f"{type(self).__name__}({', '.join([f'{name}: {repr(value)}' for name, value in vars(self).items() if name[0] != '_'])})"
 
 
 class ValueExpression(UndoExpression):
@@ -180,7 +180,7 @@ class ConditionalExpression(UndoExpression):
         self.operator = operator
         self.right = right
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, ConditionalExpression)
                 and self.negate and other.negate
                 and self.operator == other.operator
@@ -212,7 +212,7 @@ class AccessorExpression(ValueExpression):
     def __init__(self, identifier: Token):
         self.identifier = identifier
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return(isinstance(other, AccessorExpression)
                and self.identifier == other.identifier)
 
@@ -229,7 +229,7 @@ class TernaryExpression(ValueExpression):
         self.if_value = if_value
         self.else_value = else_value
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, TernaryExpression)
                 and self.condition == other.condition
                 and self.if_value == other.if_value
@@ -246,7 +246,7 @@ class StringLiteralExpression(ValueExpression):
     def __init__(self, token: Token):
         self.token = token
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, StringLiteralExpression)
                 and self.token == other.token)
 
@@ -256,11 +256,15 @@ class StringLiteralExpression(ValueExpression):
 
 class StringExpansionExpression(ValueExpression):
     def __init__(self, token: Token):
-        self.__token = token
+        self.token = token
+
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, StringExpansionExpression)
+                and self.token == other.token)
 
     def evaluate(self, env: dict[str, str]) -> str:
-        idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", self.__token.body))
-        expanded = self.__token.body
+        idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", self.token.body))
+        expanded = self.token.body
 
         for ident in idents:
             expanded = expanded.replace(ident, env.setdefault(ident[1:], ""))
@@ -276,7 +280,7 @@ class ExistenceExpression(ConditionalExpression):
         super().__init__(negate, operator, right)
         self.identifier = identifier
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, ExistenceExpression)
                 and self.identifier == other.identifier
                 and self.operator == other.operator
@@ -299,7 +303,7 @@ class CommandExpression(abc.ABC):
         self.command = command
         self.argument = argument
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, CommandExpression)
                 and self.command == other.command
                 and self.argument == other.argument)
@@ -330,7 +334,7 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
         super(ConditionalCommandExpression, self).__init__(command, argument)
         super(CommandExpression, self).__init__(negate, None, None)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, ConditionalCommandExpression)
                 and self.negate == other.negate
                 and self.command == other.command
@@ -382,8 +386,13 @@ def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, in
         pass
 
     try:
-        return __parse_ternary_expression_tokens(tokens)
+        return __parse_string_expansion_expression_tokens(tokens)
     except (ParseError, IndexError):
+        pass
+
+    try:
+        return __parse_ternary_expression_tokens(tokens)
+    except (ParseError, IndexError) as err:
         pass
 
     try:
@@ -401,7 +410,7 @@ def __parse_conditional_expression_tokens(tokens: list[Token]) -> (ConditionalEx
 
     try:
         conditional, token_count = __parse_existence_expression_tokens(tokens)
-    except (ParseError, IndexError):
+    except (ParseError, IndexError) as err:
         try:
             conditional, token_count = __parse_conditional_command_expression_tokens(tokens)
         except (ParseError, IndexError):
@@ -467,7 +476,7 @@ def __parse_string_literal_expression_tokens(tokens: list[Token]) -> (StringLite
     return StringLiteralExpression(tokens[0]), 1
 
 
-def __parse_sting_expansion_expression_tokens(tokens: list[Token]) -> (StringExpansionExpression, int):
+def __parse_string_expansion_expression_tokens(tokens: list[Token]) -> (StringExpansionExpression, int):
     """Parse a StringExpansionExpression from a list of tokens."""
     if tokens[0].kind != TokenKind.STRING_EXPANSION:
         raise UnexpectedTokenError(TokenKind.STRING_EXPANSION, tokens[0].kind)

@@ -31,8 +31,10 @@ class ArgNum:
         else:
             self.count = None
 
-    def __eq__(self, other):
-        return isinstance(other, ArgNum) and self.quantifier == other.quantifier and self.count == other.count
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, ArgNum)
+                and self.quantifier == other.quantifier
+                and self.count == other.count)
 
 
 # todo: may need to support argument groups
