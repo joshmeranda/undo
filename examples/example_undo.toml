@@ -21,18 +21,14 @@ supported-shells = [
 # - ?: argument is a flag and takes no value
 # - ...: argument takes one or more arguments
 # - : argument takes exactly one value
-[[entry]]
-cmd = 'example do [DIR:--dir,-d] [?:--verbose]'
-undo = "rm % VERBOSE ? --verbose % \\
-           % DIR ? \"$DIR/example\" : '~/example' %"
-
+#
 # Also see the use of a
 # ternary conditional. Here `DIR ? $DIR/example : ~/example` checks if a value was specified for DIR, and if so it will
 # prepend that value to the
 [[entry]]
-cmd = "example do [DIR:--dir,-d] [?:--verbose]"
-undo = "rm % VERBOSE ? --verbose % \\
-            % DIR ? $DIR : '~' %/example"
+cmd = 'example do [DIR:--dir,-d] [?:--verbose]'
+undo = """rm % VERBOSE ? --verbose %
+             % DIR ? "$DIR/example" : '~/example' %"""
 
 # WARNING: in most cases something like this is impractical because there is no guarantee that there was no data written
 # to the 'example' file; however, since the example command does not write to teh of 'example'  file after writing it
@@ -48,9 +44,9 @@ undo = "test ! -example && touch % $DIR ? $DIR : '~' %/example"
 # than just one shell like bash.
 [[entry]]
 cmd = "mv <SRC> <DST>"
-undo = "test -d % $DST % \\
-        && mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %) \\
-        || mv % $DST % % $SRC %"
+undo = """test -d % DST %
+            & mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %)
+            || mv % $DST % % $SRC %"""
 
 # There is a pretty big flaw with the example above ; however, the `mv` command is able to take multiple arguments for
 # the SRC positional parameter. To resolve this, add an ellipse (ie "...") to the end of the argument name, this will
@@ -58,9 +54,10 @@ undo = "test -d % $DST % \\
 # reference the entire list by including the ellipse or each individual item by excluding it. The pitfall here is that
 # if you reference each item individually (even just once) you will force the command to be run once for each element,
 # so it is preferable to use the list access whenever possible.
+# todo: actually implement this style of elipse expansion
 # todo: allow specifying a delimiter for the list values (often a space but can also be a comma)
 [[entry]]
 cmd = "mv <SRC...> <DST>"
-undo = "test -d % $DST % \\
-        && mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %) \\
-        || mv % $DST % % $SRC %"
+undo = """test -d % DST %
+            & mv % $DST %/$(basename % $SRC %) $(dirname % $SRC %)
+            || mv % $DST % % $SRC %"""
