@@ -14,12 +14,13 @@ def expand(undo: str, env: dict[str, str]) -> str:
     if undo.count("%") % 2 != 0:
         raise ValueError(f"unbalanced '%' in : {undo}")
 
-    splits = [i.strip() for i in re.findall("%[^%]*%|[^%]+", undo) if not i.isspace()]
+    splits = [i
+              for i in re.findall(r"\s+|%[^%^]*%|[^%^\s]+", undo)]
 
     expanded = list()
 
     for i in splits:
-        if i[0] == i[-1] == "%":
+        if len(i) > 2 and i[0] == i[-1] == "%":
             expr = expression.parse(i.strip("%").strip())
 
             if isinstance(expr, expression.ValueExpression):
@@ -29,7 +30,7 @@ def expand(undo: str, env: dict[str, str]) -> str:
         else:
             expanded.append(i)
 
-    return ' '.join(expanded)
+    return ''.join(expanded)
 
 
 def main():
