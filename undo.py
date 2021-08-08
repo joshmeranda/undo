@@ -34,11 +34,7 @@ def expand(undo: str, env: dict[str, str]) -> str:
 
 
 def main():
-    undo = expand("""rm % VERBOSE ? '--verbose' % % DIR ? \"$DIR/example\" : '~/example' %""", {
-        "VERBOSE": str(True)
-    })
-
-    print(undo)
+    pass
 
 
 if __name__ == "__main__":

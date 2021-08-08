@@ -3,7 +3,6 @@ import os
 import unittest
 
 import resolve
-from pattern import *
 
 UndoRegistry = resolve.__UndoRegistry
 
@@ -28,11 +27,12 @@ class TestUndoRegistry(unittest.TestCase):
         [[entry]]
         cmd = "test"
         undo = "untest"
+        precise = true
         """))
 
         expected = [(dict(), "untest")]
 
-        actual = registry.resolve("test")
+        actual = registry.resolve("test", False)
 
         self.assertListEqual(expected, actual)
 
@@ -42,18 +42,21 @@ class TestUndoRegistry(unittest.TestCase):
         [[entry]]
         cmd = "test"
         undo = "untest"
+        precise = true
         
         [[entry]]
         cmd = "another"
         undo = "wrong"
+        precise = true
         
         [[entry]]
         cmd = "yet-another"
         undo = "another_wrong"
+        precise = true
         """))
 
         expected = [(dict(), "untest")]
-        actual = registry.resolve("test")
+        actual = registry.resolve("test", False)
 
         self.assertEqual(expected, actual)
 
@@ -63,23 +66,27 @@ class TestUndoRegistry(unittest.TestCase):
         [[entry]]
         cmd = "test [?:--all]"
         undo = "untest --all"
+        precise = true
         
         [[entry]]
         cmd = "test sub-command"
         undo = "sub-command-wrong"
+        precise = true
         
         [[entry]]
         cmd = "test <--some>"
         undo = "wrorng-some-required"
+        precise = true
         
         [[entry]]
         cmd = "test"
         undo = "test-wrong"
+        precise = true
         """))
 
         expected = [({"ALL": True}, "untest --all")]
 
-        actual = registry.resolve("test --all")
+        actual = registry.resolve("test --all", False)
 
         self.assertEqual(expected, actual)
 
@@ -89,20 +96,23 @@ class TestUndoRegistry(unittest.TestCase):
         [[entry]]
         cmd = "test [?:--all]"
         undo = "untest --all"
+        precise = true
         
         [[entry]]
         cmd = "test sub-command"
         undo = "sub-command-wrong"
+        precise = true
         
         [[entry]]
         cmd = "test [?:--some]"
         undo = "untest --some"
+        precise = true
         """))
 
         expected = [({"ALL": False}, "untest --all"),
                     ({"SOME": False}, "untest --some")]
 
-        actual = registry.resolve("test")
+        actual = registry.resolve("test", False)
 
         self.assertEqual(expected, actual)
 
@@ -112,31 +122,79 @@ class TestUndoRegistry(unittest.TestCase):
         [[entry]]
         cmd = "test <?:--all>"
         undo = "untest --all"
+        precise = true
 
         [[entry]]
         cmd = "test sub-command"
         undo = "sub-command-wrong"
+        precise = true
 
         [[entry]]
         cmd = "test <?:--some>"
         undo = "untest --some"
+        precise = true
         """))
 
         expected = []
 
-        actual = registry.resolve("test")
+        actual = registry.resolve("test", False)
 
         self.assertEqual(expected, actual)
 
+    def test_precise(self):
+        registry = UndoRegistry(io.StringIO("""supported-shells = ['bash']
+        
+        [[entry]]
+        cmd = "test"
+        undo = "untest"
+        """))
+
+        expected = []
+        actual = registry.resolve("test", False)
+
+        self.assertListEqual(expected, actual)
+
+    def test_imprecise(self):
+        registry = UndoRegistry(io.StringIO("""supported-shells = ['bash']
+        
+        [[entry]]
+        cmd = "test"
+        undo = "untest"
+        """))
+
+        expected = [(dict(), "untest")]
+        actual = registry.resolve("test", True)
+
+        self.assertListEqual(expected, actual)
+
+    def test_missing_cmd(self):
+        with self.assertRaises(resolve.RegistrySpecError):
+            UndoRegistry(io.StringIO("""
+                    [[entry]]
+                    # cmd = "test"
+                    undo = "untest"
+                    """))
+
+    def test_missing_undo(self):
+        with self.assertRaises(resolve.RegistrySpecError):
+            UndoRegistry(io.StringIO("""
+                    [[entry]]
+                    cmd = "test"
+                    # undo = "untest"
+                    """))
+
 
 class TestResolve(unittest.TestCase):
+    TEST_SEARCH_ALL_DIR = os.path.join(RESOURCE_DIR_PATH, "search_all")
+    TEST_ALLOW_IMPRECISE = os.path.join(RESOURCE_DIR_PATH, "allow_imprecise")
+
     @classmethod
     def setUpClass(cls) -> None:
         os.environ["SHELL"] = "/usr/bin/bash"
 
     def test_basic_no_search_all(self):
         expected = [(dict(), "untest")]
-        actual = resolve.resolve("test", [RESOURCE_DIR_PATH])
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR])
 
         self.assertListEqual(expected, actual)
 
@@ -145,7 +203,24 @@ class TestResolve(unittest.TestCase):
             (dict(), "untest"),
             (dict(), "untest"),
         ]
-        actual = resolve.resolve("test", [RESOURCE_DIR_PATH], True)
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], search_all=True)
+
+        self.assertListEqual(expected, actual)
+
+    def test_allow_imprecise_false(self):
+        expected = [
+            (dict(), "untest"),
+        ]
+        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], allow_imprecise=False)
+
+        self.assertListEqual(expected, actual)
+
+    def test_allow_imprecise_true(self):
+        expected = [
+            (dict(), "untest"),
+            (dict(), "untest --all"),
+        ]
+        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], allow_imprecise=True)
 
         self.assertListEqual(expected, actual)
 
@@ -153,7 +228,7 @@ class TestResolve(unittest.TestCase):
         os.environ["SHELL"] = "unsupported_shell"
 
         expected = []
-        actual = resolve.resolve("test", [RESOURCE_DIR_PATH], True)
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], search_all=True)
 
         self.assertListEqual(expected, actual)
 

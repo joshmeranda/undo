@@ -186,9 +186,6 @@ class ConditionalExpression(UndoExpression):
                 and self.operator == other.operator
                 and self.right == other.right)
 
-    def __str__(self):
-        return f""
-
     def evaluate(self, env: dict[str, str]) -> bool:
         """Evaluate the result of the expression given the map of identifier and values."""
         if self.operator.kind == TokenKind.AND:
@@ -377,7 +374,7 @@ def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, in
     # todo: could be optimized by checking first token type and calling the appropriate parser method
     try:
         return __parse_value_command_expression_tokens(tokens)
-    except (ParseError, IndexError) as err:
+    except (ParseError, IndexError):
         pass
 
     try:
@@ -392,7 +389,7 @@ def __parse_value_expression_tokens(tokens: list[Token]) -> (ValueExpression, in
 
     try:
         return __parse_ternary_expression_tokens(tokens)
-    except (ParseError, IndexError) as err:
+    except (ParseError, IndexError):
         pass
 
     try:
@@ -410,7 +407,7 @@ def __parse_conditional_expression_tokens(tokens: list[Token]) -> (ConditionalEx
 
     try:
         conditional, token_count = __parse_existence_expression_tokens(tokens)
-    except (ParseError, IndexError) as err:
+    except (ParseError, IndexError):
         try:
             conditional, token_count = __parse_conditional_command_expression_tokens(tokens)
         except (ParseError, IndexError):
