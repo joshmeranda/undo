@@ -114,10 +114,6 @@ def resolve(command: str, include_dirs: list[str], search_all: bool = False) -> 
     :param search_all: search all files rather than stopping at hte first file with a matching undo pattern.
     :return: the resolved string command, or None if no appropriate command could be found.
     """
-
-    # include_dirs = os.getenv("UNDO_INCLUDE_PATH",
-    #                          ["~/.local/share/undo", "/usr/local/share", "/usr/share/undo"])
-
     undos = list()
 
     for include_dir in include_dirs:
