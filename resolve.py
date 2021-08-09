@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import shlex
 import toml
@@ -49,7 +50,12 @@ class __UndoRegistry:
         if not shell:
             shell = os.path.basename(os.getenv("SHELL"))
 
-        return shell in self.__shells
+        is_supported = shell in self.__shells
+
+        if not is_supported:
+            logging.debug(f"shell '{shell}' is not supported")
+
+        return is_supported
 
     def resolve(self, command: str, allow_imprecise: bool) -> list[(dict, str)]:
         """Resolve the given command with the registered undo pattern.
@@ -58,29 +64,28 @@ class __UndoRegistry:
         :param allow_imprecise: include imprecise undo patterns in the returned results.
         :return: the matching undo pattern.
         """
-        command, *argv = shlex.split(command)
+        cmd, *argv = shlex.split(command)
 
         undos: list[(dict, str)] = list()
 
         for entry in self.__entries:
-            try:
-                cmd = entry[self.__ENTRY_CMD]
-                undo = entry[self.__ENTRY_UNDO]
-                precise = entry[self.__ENTRY_PRECISE]
-            except KeyError:
-                # todo: log the key error
-                continue
+            cmd_pattern = entry[self.__ENTRY_CMD]
+            undo_pattern = entry[self.__ENTRY_UNDO]
+            precise = entry[self.__ENTRY_PRECISE]
 
-            parser = pattern.pattern_to_argparse(cmd)
+            parser = pattern.pattern_to_argparse(cmd_pattern)
 
-            if parser.prog == command:
+            if parser.prog == cmd:
                 try:
                     namespace = parser.parse_args(argv)
 
                     if precise or not precise and allow_imprecise:
-                        undos.append((vars(namespace), undo))
+                        undos.append((vars(namespace), undo_pattern))
+                        logging.info(f"command '{command}' matched pattern '{cmd_pattern}'")
+                    else:
+                        logging.debug(f"command '{command}' matched pattern '{cmd_pattern}' but was not precise enough")
                 except argparse.ArgumentError:
-                    pass
+                    logging.debug(f"command '{command}' does not match '{cmd_pattern}'")
 
         return undos
 
@@ -96,15 +101,19 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
     :param search_all: allow for finding multiple undo commands across all commands.
     :return: the resolved string command, or None if no appropriate command could be found.
     """
+    logging.info(f"resolving directory '{include_dir}'")
     undos = list()
 
     for file in os.listdir(include_dir):
         full_path = os.path.join(include_dir, file)
 
+        logging.info(f"resolving in file '{full_path}'")
+
         try:
             registry = __UndoRegistry(full_path)
-        except toml.TomlDecodeError:
-            # todo: log error on verbose
+        except toml.TomlDecodeError as err:
+            logging.warning(f"there was an issue deserializing toml file")
+            logging.warning(err)
             continue
 
         if not registry.is_shell_supported():

@@ -1,8 +1,6 @@
 from .pattern import *
 
 import argparse
-import shlex
-import typing
 
 
 class _UndoArgumentParser(argparse.ArgumentParser):
@@ -19,13 +17,6 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
     `exit_on_error` parameter is set to `False` on all returned parsers. Note that due to bgo-41255 there are still
     remaining issues with the `exit_on_error` kwarg and so this subclass with overridden `exit` and `error` methods
     is needed.
-
-    todo: add more documentation
-        how are un-named positional arguments named?
-        nargs?
-        required?
-        flags?
-        error_on_exit == false
 
     todo: test if setting "help" arguments to "''" rather than None is faster
 
@@ -64,7 +55,6 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
         elif arg.arg_num.count != 0:
             kwargs["nargs"] = arg.arg_num.count
         elif arg.arg_num.count == 0:
-            # kwargs["type"] = bool
             kwargs["action"] = "store_true"
 
         if not arg.is_positional:

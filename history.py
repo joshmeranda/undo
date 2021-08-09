@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 import os.path
 import typing
@@ -22,6 +23,7 @@ def __read_commands(stream: typing.TextIO, n: int, func: typing.Callable[[str], 
 def __generic_history(cmd: list[str], limit: int, file: typing.Optional[typing.TextIO],
                       func: typing.Callable[[str], str] = lambda line: line) -> list[str]:
     if file is None:
+        logging.debug(f"running history command '{' '.join(cmd)}'")
         proc = subprocess.run(cmd, capture_output=True)
         stream = io.StringIO(proc.stdout.decode("utf-8"))
     else:
@@ -74,7 +76,6 @@ def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.O
     :param stream: The file-like object to read history data from.
     :return: a list of the last command(s) run through the given shell.
     """
-
     if shell is None:
         shell = os.getenv("SHELL")
 

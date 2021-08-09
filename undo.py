@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import logging
 import re
 
 import expression
+import history
 
 
 def expand(undo: str, env: dict[str, str]) -> str:
@@ -21,12 +23,17 @@ def expand(undo: str, env: dict[str, str]) -> str:
 
     for i in splits:
         if len(i) > 2 and i[0] == i[-1] == "%":
-            expr = expression.parse(i.strip("%").strip())
+            # todo: test this warning
+            try:
+                expr = expression.parse(i.strip("%").strip())
+            except expression.ExpressionError as err:
+                logging.warning(err)
+                continue
 
             if isinstance(expr, expression.ValueExpression):
                 expanded.append(expr.evaluate(env))
             else:
-                raise ValueError(f"expected a string value but found a boolean: '{i}'")
+                logging.warning(f"expected a string value but found a boolean: '{i}'")
         else:
             expanded.append(i)
 
