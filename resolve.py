@@ -104,16 +104,19 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
     logging.info(f"resolving directory '{include_dir}'")
     undos = list()
 
-    for file in os.listdir(include_dir):
-        full_path = os.path.join(include_dir, file)
+    for path in os.listdir(include_dir):
+        full_path = os.path.join(include_dir, path)
+
+        if not os.path.isfile(full_path):
+            continue
 
         logging.info(f"resolving in file '{full_path}'")
 
         try:
             registry = __UndoRegistry(full_path)
         except toml.TomlDecodeError as err:
-            logging.warning(f"there was an issue deserializing toml file")
-            logging.warning(err)
+            logging.error(f"there was an issue deserializing toml file")
+            logging.error(err)
             continue
 
         if not registry.is_shell_supported():
@@ -156,5 +159,7 @@ def resolve(command: str, include_dirs: list[str],
 
                 if not search_all:
                     break
+        else:
+            logging.debug(f"include directory '{include_dir}' does not exists")
 
     return undos
