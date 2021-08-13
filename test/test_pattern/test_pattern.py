@@ -67,6 +67,14 @@ class TestArgumentPattern(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_argument(content)
 
+    def test_positional_optional_args(self):
+        content = "<?>"
+
+        expected = ArgumentPattern(None, ArgNum(Quantifier.N, 0), list(), True, True)
+        actual = parse_argument(content)
+
+        self.assertEqual(actual, expected)
+
     def test_bad_braces(self):
         with self.assertRaises(ValueError):
             parse_argument("[>")

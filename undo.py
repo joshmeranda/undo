@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import shlex
 import subprocess
 import re
 import typing
@@ -53,6 +54,35 @@ def default_include_dirs():
     ])
 
 
+def get_user_selection(commands: list[str]) -> typing.Optional[str]:
+    prompt = "Please select the command to run (invalid input will run no commands):"
+
+    for i, command in enumerate(commands):
+        prompt += f"\n  {i + 1} ) {command}"
+
+    prompt += "\nselection: "
+
+    selection = input(prompt)
+
+    try:
+        return commands[int(selection) - 1]
+    except IndexError:
+        print(f"input '{int(selection)}' does not match any command")
+    except ValueError:
+        print(f"input '{selection}' is not a valid number")
+
+    return None
+
+
+def interact(commands: list[str]) -> typing.Optional[str]:
+    if len(commands) == 1:
+        response = input(f"run command '{commands[0]}'? [Y/n] ").lower()
+
+        return commands[0] if response == 'y' or response == '' else None
+
+    return get_user_selection(commands)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(prog="undo",
                                      description="make a 'best effort' attempt to undo the most recently run command")
@@ -63,7 +93,8 @@ def parse_args():
                              "have no additional effect")
 
     parser.add_argument("-d", "--dry",
-                        action="store_true", help="show all commands which have been found to undo the last command")
+                        action="store_true", help="show the resolved command(s) but do not run them, this flag will"
+                                                  "disable interactivity if specified")
 
     parser.add_argument("--allow-imprecise",
                         action="store_true", help="show commands which are not precise and may have unexpected or "
@@ -84,47 +115,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_user_selection(commands: list[str]) -> typing.Optional[str]:
-    prompt = "Please select the command to run (invalid input will run no commands):"
-
-    for i, command in enumerate(commands):
-        prompt += f"\n  {i + 1} ) {command}"
-
-    prompt += "\n selection: "
-
-    selection = input(prompt)
-
-    try:
-        return commands[int(selection) - 1]
-    except IndexError:
-        print(f"input '{int(selection)}' does not match any command")
-    except ValueError:
-        print(f"input '{selection}' is not a valid number")
-
-    return None
-
-
-def interact(commands: list[str]) -> typing.Optional[str]:
-    if len(commands) == 1:
-        response = input(f"rund commands '{commands[0]}'? [Y/n] ").lower()
-
-        return commands[0] if response == 'y' or response == '' else None
-
-    get_user_selection(commands)
-
-
-def no_interact(commands: list[str]):
-    if len(commands) > 1:
-        print("multiple undo commands found, select copy one of the commands below to clipboard to run: ")
-
-        for i, command in enumerate(commands):
-            print(f"  {i + 1} ) {command}")
-    else:
-        subprocess.run(commands[0])
-
-
 def main():
     namespace = parse_args()
+
+    logging.info(f"UNDO_INCLUDE_DIRS = {os.getenv('UNDO_INCLUDE_DIRS')}")
 
     include_dirs = os.getenv("UNDO_INCLUDE_DIRS", default_include_dirs()).split(":")
 
@@ -132,18 +126,28 @@ def main():
 
     command = history.history(1)[0] if namespace.command is None else namespace.command
 
-    undos = resolve.resolve(command, include_dirs,
-                            search_all=namespace.all, allow_imprecise=namespace.allow_imprecise)
+    resolved = resolve.resolve(command, include_dirs,
+                               search_all=namespace.all, allow_imprecise=namespace.allow_imprecise)
 
-    expanded = [expand(undo, env) for (env, undo) in undos]
+    undos = [expand(undo, env) for (env, undo) in resolved]
 
     if len(undos) == 0:
         print(f"no command was found to undo '{command}'")
-    else:
-        if namespace.interactive:
-            interact(expanded)
+        return
+    elif len(undos) == 1 and not namespace.interactive:
+        subprocess.run(shlex.split(undos[0]))
+    elif namespace.dry:
+        print('\n'.join(undos))
+    elif namespace.interactive:
+        undo_command = interact(undos)
+
+        if undo_command is not None:
+            subprocess.run(shlex.split(undo_command))
         else:
-            no_interact(expanded)
+            print("no command was selected")
+    else:
+        print("multiple undo commands found, copy on the the commands below to clipboard to run: ")
+        print('\n'.join(f"  {i + 1} ) {command}" for i, command in enumerate(undos)))
 
 
 if __name__ == "__main__":
