@@ -104,6 +104,25 @@ def get_user_selection(commands: list[str]) -> typing.Optional[str]:
     return None
 
 
+def interact(commands: list[str]) -> typing.Optional[str]:
+    if len(commands) == 1:
+        response = input(f"rund commands '{commands[0]}'? [Y/n] ").lower()
+
+        return commands[0] if response == 'y' or response == '' else None
+
+    get_user_selection(commands)
+
+
+def no_interact(commands: list[str]):
+    if len(commands) > 1:
+        print("multiple undo commands found, select copy one of the commands below to clipboard to run: ")
+
+        for i, command in enumerate(commands):
+            print(f"  {i + 1} ) {command}")
+    else:
+        subprocess.run(commands[0])
+
+
 def main():
     namespace = parse_args()
 
@@ -121,14 +140,10 @@ def main():
     if len(undos) == 0:
         print(f"no command was found to undo '{command}'")
     else:
-        if namespace.interactive or len(expanded) > 1:
-            command = get_user_selection(expanded)
+        if namespace.interactive:
+            interact(expanded)
         else:
-            command = expanded[0]
-
-        if command is not None:
-            print(f"running '{command}'")
-            subprocess.run(command)
+            no_interact(expanded)
 
 
 if __name__ == "__main__":
