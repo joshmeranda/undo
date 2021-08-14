@@ -1,10 +1,10 @@
 import io
 import logging
-import os
-import os.path
 import typing
 import re
 import subprocess
+
+import utils
 
 
 def __read_commands(stream: typing.TextIO, n: int, func: typing.Callable[[str], str]) -> list[str]:
@@ -64,9 +64,11 @@ def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.O
     """Retrieve the last command(s) of the given shell excluding the command which launched the current command if
     included by the shell.
 
-    The returned commands will be in order from most newest to oldest. If `shell` is not specified, the basename for the
-    value of the `SHELL` environment variable is used. If `file` is not specified, the default file paths for the shell
-    is used.
+    The returned commands will be in order from most newest to oldest.
+
+    If `shell` is not specified, the process name of the ppid is used (/proc/<ppid>/comm).
+
+    If `file` is not specified, the default file paths for the shell is used.
 
     Note that the commands returned by this method will be those returned by the given (or determined) shell builtin
     history command.
@@ -77,16 +79,14 @@ def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.O
     :return: a list of the last command(s) run through the given shell.
     """
     if shell is None:
-        shell = os.getenv("SHELL")
+        shell = utils.get_parent_shell()
 
         if shell is None:
             raise Exception("could not determine the target shell")
 
-    shell_basename = os.path.basename(shell)
-
-    if shell_basename == "bash" or shell_basename == "sh":
+    if shell == "bash" or shell == "sh":
         return __history_sh(shell, limit, stream)
-    elif shell_basename == "fish":
+    elif shell == "fish":
         return __history_fish(shell, limit, stream)
     else:
         raise Exception(f"unsupported shell '{shell}'")

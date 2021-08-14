@@ -5,6 +5,7 @@ import shlex
 import toml
 
 import pattern
+import utils
 
 
 class RegistrySpecError(ValueError):
@@ -48,7 +49,7 @@ class __UndoRegistry:
         """
 
         if not shell:
-            shell = os.path.basename(os.getenv("SHELL"))
+            shell = utils.get_parent_shell()
 
         is_supported = shell in self.__shells
 
