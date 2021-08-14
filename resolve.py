@@ -31,7 +31,7 @@ class __UndoRegistry:
 
         try:
             self.__entries = [{
-                self.__ENTRY_CMD: pattern.parse_command_pattern(entry[self.__ENTRY_CMD]),
+                self.__ENTRY_CMD: entry[self.__ENTRY_CMD],
                 self.__ENTRY_UNDO: entry[self.__ENTRY_UNDO],
                 self.__ENTRY_PRECISE: entry.setdefault(self.__ENTRY_PRECISE, False)
             }
@@ -69,7 +69,7 @@ class __UndoRegistry:
         undos: list[(dict, str)] = list()
 
         for entry in self.__entries:
-            cmd_pattern = entry[self.__ENTRY_CMD]
+            cmd_pattern = pattern.parse_command_pattern(entry[self.__ENTRY_CMD])
             undo_pattern = entry[self.__ENTRY_UNDO]
             precise = entry[self.__ENTRY_PRECISE]
 
@@ -81,11 +81,12 @@ class __UndoRegistry:
 
                     if precise or not precise and allow_imprecise:
                         undos.append((vars(namespace), undo_pattern))
-                        logging.info(f"command '{command}' matched pattern '{cmd_pattern}'")
+                        logging.info(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}'")
                     else:
-                        logging.debug(f"command '{command}' matched pattern '{cmd_pattern}' but was not precise enough")
+                        logging.debug(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}' but was not"
+                                      f"precise enough")
                 except argparse.ArgumentError:
-                    logging.debug(f"command '{command}' does not match '{cmd_pattern}'")
+                    logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}'")
 
         return undos
 

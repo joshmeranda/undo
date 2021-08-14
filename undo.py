@@ -118,8 +118,6 @@ def parse_args():
 def main():
     namespace = parse_args()
 
-    logging.info(f"UNDO_INCLUDE_DIRS = {os.getenv('UNDO_INCLUDE_DIRS')}")
-
     include_dirs = os.getenv("UNDO_INCLUDE_DIRS", default_include_dirs()).split(":")
 
     logging.basicConfig(format="[%(levelname)s] %(message)s", level=50 - namespace.verbose * 10)
