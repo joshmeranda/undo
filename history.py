@@ -4,8 +4,6 @@ import typing
 import re
 import subprocess
 
-import utils
-
 
 def __read_commands(stream: typing.TextIO, n: int, func: typing.Callable[[str], str]) -> list[str]:
     """Read the last N commands from the stream excluding the current process' command.
@@ -60,7 +58,7 @@ def __history_fish(path: str, limit: int, file: typing.Optional[typing.TextIO]) 
         file=file)
 
 
-def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.Optional[typing.TextIO] = None) -> list[str]:
+def history(shell: str, limit: int = 1, stream: typing.Optional[typing.TextIO] = None) -> list[str]:
     """Retrieve the last command(s) of the given shell excluding the command which launched the current command if
     included by the shell.
 
@@ -78,11 +76,6 @@ def history(limit: int = 1, shell: typing.Optional[str] = None, stream: typing.O
     :param stream: The file-like object to read history data from.
     :return: a list of the last command(s) run through the given shell.
     """
-    if shell is None:
-        shell = utils.get_parent_shell()
-
-        if shell is None:
-            raise Exception("could not determine the target shell")
 
     if shell == "bash" or shell == "sh":
         return __history_sh(shell, limit, stream)

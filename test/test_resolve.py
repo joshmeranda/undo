@@ -10,14 +10,9 @@ RESOURCE_DIR_PATH = os.path.join(os.path.dirname(__file__), "resources")
 
 
 class TestUndoRegistry(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        os.environ["SHELL"] = "/usr/bin/bash"
-
     def test_is_shell_supported(self):
         registry = UndoRegistry(io.StringIO("supported-shells = ['bash']"))
 
-        self.assertTrue(registry.is_shell_supported())
         self.assertTrue(registry.is_shell_supported("bash"))
         self.assertFalse(registry.is_shell_supported("not_supported"))
 
@@ -188,13 +183,9 @@ class TestResolve(unittest.TestCase):
     TEST_SEARCH_ALL_DIR = os.path.join(RESOURCE_DIR_PATH, "search_all")
     TEST_ALLOW_IMPRECISE = os.path.join(RESOURCE_DIR_PATH, "allow_imprecise")
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        os.environ["SHELL"] = "/usr/bin/bash"
-
     def test_basic_no_search_all(self):
         expected = [(dict(), "untest")]
-        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR])
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], False, False, "bash")
 
         self.assertListEqual(expected, actual)
 
@@ -203,7 +194,7 @@ class TestResolve(unittest.TestCase):
             (dict(), "untest"),
             (dict(), "untest"),
         ]
-        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], search_all=True)
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], True, False, "bash")
 
         self.assertListEqual(expected, actual)
 
@@ -211,7 +202,7 @@ class TestResolve(unittest.TestCase):
         expected = [
             (dict(), "untest"),
         ]
-        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], allow_imprecise=False)
+        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], False, False, "bash")
 
         self.assertListEqual(expected, actual)
 
@@ -220,15 +211,13 @@ class TestResolve(unittest.TestCase):
             (dict(), "untest"),
             (dict(), "untest --all"),
         ]
-        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], allow_imprecise=True)
+        actual = resolve.resolve("test", [TestResolve.TEST_ALLOW_IMPRECISE], False, True, "bash")
 
         self.assertListEqual(expected, actual)
 
     def test_search_unsupported_shell(self):
-        os.environ["SHELL"] = "unsupported_shell"
-
         expected = []
-        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], search_all=True)
+        actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], False, True, "unsupported_shell")
 
         self.assertListEqual(expected, actual)
 

@@ -4,46 +4,12 @@ import logging
 import os
 import shlex
 import subprocess
-import re
 import typing
 
-import expression
+import expand
 import history
 import resolve
-
-
-def expand(undo: str, env: dict[str, str]) -> str:
-    """Expand a string containing 0 or more UndoExpressions in them using the given environment.
-
-    :param undo: the undo pattern to expand.
-    :param env: the dictionary containing the  values to use for evaluating undo expressions.
-    :raise ValueError: for any error with bad syntax or format.
-    """
-    if undo.count("%") % 2 != 0:
-        raise ValueError(f"unbalanced '%' in : {undo}")
-
-    splits = [i
-              for i in re.findall(r"\s+|%[^%^]*%|[^%^\s]+", undo)]
-
-    expanded = list()
-
-    for i in splits:
-        if len(i) > 2 and i[0] == i[-1] == "%":
-            # todo: test this warning
-            try:
-                expr = expression.parse(i.strip("%").strip())
-            except expression.ExpressionError as err:
-                logging.error(err)
-                continue
-
-            if isinstance(expr, expression.ValueExpression):
-                expanded.append(expr.evaluate(env))
-            else:
-                logging.error(f"expected a string value but found a boolean: '{i}'")
-        else:
-            expanded.append(i)
-
-    return ''.join(expanded)
+import utils
 
 
 def default_include_dirs():
@@ -122,12 +88,13 @@ def main():
 
     logging.basicConfig(format="[%(levelname)s] %(message)s", level=50 - namespace.verbose * 10)
 
-    command = history.history(1)[0] if namespace.command is None else namespace.command
+    shell = utils.get_parent_shell()
 
-    resolved = resolve.resolve(command, include_dirs,
-                               search_all=namespace.all, allow_imprecise=namespace.allow_imprecise)
+    command = history.history(shell, 1)[0] if namespace.command is None else namespace.command
 
-    undos = [expand(undo, env) for (env, undo) in resolved]
+    resolved = resolve.resolve(command, include_dirs, namespace.all, namespace.allow_imprecise, shell)
+
+    undos = [expand.expand(undo, env) for (env, undo) in resolved]
 
     if len(undos) == 0:
         print(f"no command was found to undo '{command}'")

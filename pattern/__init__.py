@@ -50,12 +50,12 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
             kwargs["nargs"] = "*"
         elif arg.arg_num.quantifier == Quantifier.AT_LEAST_ONE:
             kwargs["nargs"] = "+"
-        elif arg.arg_num.count == 1:
-            kwargs["nargs"] = None
-        elif arg.arg_num.count != 0:
-            kwargs["nargs"] = arg.arg_num.count
         elif arg.arg_num.count == 0:
             kwargs["action"] = "store_true"
+        elif arg.arg_num.count == 1:
+            kwargs["nargs"] = None
+        elif arg.arg_num.count > 1:
+            kwargs["nargs"] = arg.arg_num.count
 
         if not arg.is_positional:
             kwargs["required"] = arg.is_required

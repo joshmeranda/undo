@@ -31,6 +31,9 @@ class ArgNum:
         else:
             self.count = None
 
+    def __repr__(self):
+        return f"{type(self).__name__}({', '.join([f'{name}: {repr(value)}' for name, value in vars(self).items() if name[0] != '_'])})"
+
     def __eq__(self, other) -> bool:
         return (isinstance(other, ArgNum)
                 and self.quantifier == other.quantifier
@@ -60,7 +63,7 @@ class CommandPattern:
 
 
 __IDENTIFIER_REGEX = re.compile("[A-Z]+")
-__QUANTIFIER_REGEX = re.compile(r"\+|\?|\.\.\.|[1-9][0-9]*")
+__QUANTIFIER_REGEX = re.compile(r"\*|\?|\.\.\.|[1-9][0-9]*")
 
 __SHORT_REGEX = r"-[a-zA-Z0-9]"
 __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
@@ -92,9 +95,9 @@ def __parse_arg_num(content: str) -> (ArgNum, int):
 
     if quantifier == '?':
         arg_num = ArgNum(Quantifier.N, 0)
-    elif quantifier == '+':
+    elif quantifier == '...':
         arg_num = ArgNum(Quantifier.AT_LEAST_ONE)
-    elif quantifier == "...":
+    elif quantifier == "*":
         arg_num = ArgNum(Quantifier.ANY)
     else:
         arg_num = ArgNum(Quantifier.N, int(quantifier))
@@ -130,7 +133,7 @@ def parse_argument(content: str) -> ArgumentPattern:
 
         IDENTIFIER := [A-Z]+
 
-        QUANTIFIER := '' | '?' | '...'
+        QUANTIFIER := '' | '?' | '...' | '*'
 
         SHORT := '-[a-zA-Z0-9]'
         LONG := '--[a-zA-Z][a-zA-Z-]*'

@@ -5,7 +5,6 @@ import shlex
 import toml
 
 import pattern
-import utils
 
 
 class RegistrySpecError(ValueError):
@@ -40,16 +39,13 @@ class __UndoRegistry:
         except KeyError as err:
             raise RegistrySpecError(f"missing required key {err}")
 
-    def is_shell_supported(self, shell: str = None) -> bool:
+    def is_shell_supported(self, shell: str) -> bool:
         """Determine if the given shell is supported by the registry file.
 
         :param shell: THe name of the shell to check for support, defaults to the basename of the environment variable
             SHELL
         :return: True if supported, and False if not.
         """
-
-        if not shell:
-            shell = utils.get_parent_shell()
 
         is_supported = shell in self.__shells
 
@@ -92,7 +88,8 @@ class __UndoRegistry:
         return undos
 
 
-def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imprecise) -> list[(dict, str)]:
+def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imprecise: bool,
+                     shell: str) -> list[(dict, str)]:
     """Attempt to resolve the command from the undo files located in the given directory path.
 
     Please note that this method will not delve into sub directories, and will only search files with the 'undo'
@@ -121,7 +118,7 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
             logging.error(err)
             continue
 
-        if not registry.is_shell_supported():
+        if not registry.is_shell_supported(shell):
             continue
 
         resolution = registry.resolve(command, allow_imprecise)
@@ -135,10 +132,8 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
     return undos
 
 
-def resolve(command: str, include_dirs: list[str],
-            search_all: bool = False, allow_imprecise=False) -> list[(dict, str)]:
+def resolve(command: str, include_dirs: list[str], search_all: bool, allow_imprecise, shell: str) -> list[(dict, str)]:
     """Resolve the given command to the appropriate undo command.
-
 
     If search_all is False, resolve will return the undo patterns in the first file found with one or more matching undo
     patterns.
@@ -147,6 +142,7 @@ def resolve(command: str, include_dirs: list[str],
     :param include_dirs: the directories to use for undo resolution.
     :param search_all: search all files rather than stopping at hte first file with a matching undo pattern.
     :param allow_imprecise: include imprecise undo patterns in the returned results.
+    :param shell: the shell to use when checking if the current shell is supported by the undo registry.
     :return: the resolved string command, or None if no appropriate command could be found.
     """
     undos = list()
@@ -154,7 +150,7 @@ def resolve(command: str, include_dirs: list[str],
     for include_dir in include_dirs:
 
         if os.path.exists(include_dir):
-            resolutions = __resolve_in_dir(include_dir, command, search_all, allow_imprecise)
+            resolutions = __resolve_in_dir(include_dir, command, search_all, allow_imprecise, shell)
 
             if resolutions:
                 undos += resolutions

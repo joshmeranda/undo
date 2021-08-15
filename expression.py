@@ -12,9 +12,11 @@ import typing
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-# todo: add ellipse (ie '...') for group command  calls
+# todo: add ellipse (ie '...') for group command calls
+# todo: deal will command expansion with ellipse
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
+    ELLIPSE = enum.auto()
 
     STRING_LITERAL = enum.auto()
     STRING_EXPANSION = enum.auto()
@@ -51,8 +53,12 @@ __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
 __STRING_LITERAL_REGEX = r"'.*'"
 __STRING_EXPANSION_REGEX = r"\".*\""
-__SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!"
-__TOKEN_REGEX = re.compile(rf"\s*({__STRING_EXPANSION_REGEX}|{__STRING_LITERAL_REGEX}|{__COMMAND_REGEX}|{__IDENT_REGEX}|{__SYMBOL_REGEX})")
+__SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!|\.\.\."
+__TOKEN_REGEX = re.compile(rf"\s*({__STRING_EXPANSION_REGEX}|"
+                           rf"{__STRING_LITERAL_REGEX}|"
+                           rf"{__COMMAND_REGEX}|"
+                           rf"{__IDENT_REGEX}|"
+                           rf"{__SYMBOL_REGEX})")
 
 
 def __tokenize(content) -> list[Token]:
@@ -85,6 +91,8 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.OR
         elif body == "!":
             kind = TokenKind.NOT
+        elif body == "...":
+            kind = TokenKind.ELLIPSE
         elif body == "(":
             kind = TokenKind.OPEN_PARENTHESE
         elif body == ")":
@@ -166,7 +174,7 @@ class UndoExpression(abc.ABC):
 class ValueExpression(UndoExpression):
     """An expression that will produce a single string value"""
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         """Evaluate the result of the expression given the map of identifiers and values."""
 
 
@@ -213,9 +221,31 @@ class AccessorExpression(ValueExpression):
         return(isinstance(other, AccessorExpression)
                and self.identifier == other.identifier)
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env."""
         return env.setdefault(self.identifier.body, "")
+
+
+class ListAccessorExpression(AccessorExpression):
+    """Essentially the same as an AccessorExpression, but differs in that it will always return a string."""
+
+    def __init__(self, identifier: Token, delimiter: str):
+        super().__init__(identifier)
+
+        self.__delim = delimiter
+
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
+        """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env.
+
+        If the value is a list, the elements will be joined using a delimiter.
+        """
+
+        val = env.setdefault(self.identifier.body, "")
+
+        if isinstance(val, list):
+            val = self.__delim.join(val)
+
+        return val
 
 
 class TernaryExpression(ValueExpression):
@@ -232,7 +262,7 @@ class TernaryExpression(ValueExpression):
                 and self.if_value == other.if_value
                 and self.else_value == other.else_value)
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         if self.condition.evaluate(env):
             return self.if_value.evaluate(env)
         else:
@@ -247,7 +277,7 @@ class StringLiteralExpression(ValueExpression):
         return (isinstance(other, StringLiteralExpression)
                 and self.token == other.token)
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         return self.token.body
 
 
@@ -259,7 +289,7 @@ class StringExpansionExpression(ValueExpression):
         return (isinstance(other, StringExpansionExpression)
                 and self.token == other.token)
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", self.token.body))
         expanded = self.token.body
 
@@ -309,7 +339,7 @@ class CommandExpression(abc.ABC):
 class ValueCommandExpression(CommandExpression, ValueExpression):
     """A command expression which will return a string value."""
 
-    def evaluate(self, env: dict[str, str]) -> str:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         arg = self.argument.evaluate(env)
 
         if self.command.body == "dirname":
@@ -436,6 +466,9 @@ def __parse_accessor_expression_tokens(tokens: list[Token]) -> (AccessorExpressi
 
     if tokens[1].kind != TokenKind.IDENT:
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
+
+    if len(tokens) >= 3 and tokens[2].kind == TokenKind.ELLIPSE:
+        return ListAccessorExpression(tokens[1], " "), 3
 
     return AccessorExpression(tokens[1]), 2
 

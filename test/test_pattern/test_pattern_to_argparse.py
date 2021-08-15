@@ -113,6 +113,38 @@ class TestPatternToArgparse(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_at_least_one_argument(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, False)
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c", "d"])
+        actual = parser.parse_args("--list a b c d".split())
+
+        self.assertEqual(expected, actual)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args("--list".split())
+
+    def test_any_argnum(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False)
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=[])
+        actual = parser.parse_args("--list".split())
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a", "b"])
+        actual = parser.parse_args("--list a b".split())
+
+        self.assertEqual(expected, actual)
+
 
 if __name__ == "__main__":
     unittest.main()

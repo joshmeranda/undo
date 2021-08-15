@@ -28,7 +28,7 @@ class TestFishHistory(unittest.TestCase):
         stream = io.StringIO("\n".join(commands))
 
         expected = commands[:-1]
-        actual = history.history(4, "fish", stream)
+        actual = history.history("fish", 4, stream)
 
         self.assertListEqual(expected, actual)
 
@@ -42,7 +42,7 @@ class TestFishHistory(unittest.TestCase):
         stream = io.StringIO("\n".join(commands))
 
         expected = commands[:-1]
-        actual = history.history(10, "fish", stream)
+        actual = history.history("fish", 10, stream)
 
         self.assertListEqual(expected, actual)
 
@@ -72,7 +72,7 @@ class TestShHistory(unittest.TestCase):
         stream = io.StringIO("\n".join(commands))
 
         expected = ["d", "c", "b", "a"]
-        actual = history.history(4, "sh", stream)
+        actual = history.history("sh", 4, stream)
 
         self.assertListEqual(expected, actual)
 
@@ -86,7 +86,7 @@ class TestShHistory(unittest.TestCase):
         stream = io.StringIO("\n".join(commands))
 
         expected = ["d", "c", "b", "a"]
-        actual = history.history(10, "sh", stream)
+        actual = history.history("sh", 10, stream)
 
         self.assertListEqual(expected, actual)
 

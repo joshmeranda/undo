@@ -161,6 +161,19 @@ class TestParseValue(unittest.TestCase):
         self.assertEqual(expected, actual)
         self.assertEqual(2, offset)
 
+    def test_multiple_accessor_expression(self):
+        tokens = [
+            Token(TokenKind.ACCESSOR, "$", 0),
+            Token(TokenKind.IDENT, "A", 0),
+            Token(TokenKind.ELLIPSE, "...", 0)
+        ]
+
+        expected = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
+        actual, offset = parse_value_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(3, offset)
+
     def test_value_command_expression(self):
         command = Token(TokenKind.COMMAND, "basename", 0)
         argument = Token(TokenKind.IDENT, "/some/path", 0)
@@ -315,6 +328,19 @@ class TestParseAccessorTokens(unittest.TestCase):
 
         self.assertEqual(expected, actual)
         self.assertEqual(2, offset)
+
+    def test_list(self):
+        tokens = [
+            Token(TokenKind.ACCESSOR, "$", 0),
+            Token(TokenKind.IDENT, "A", 0),
+            Token(TokenKind.ELLIPSE, "...", 0)
+        ]
+
+        expected = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
+        actual, offset = parse_accessor_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(3, offset)
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
@@ -536,7 +562,8 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
 class TestAccessorExpression(unittest.TestCase):
     def setUp(self) -> None:
         self.env = {
-            "A": "some_value"
+            "A": "some_value",
+            "LIST": ["a", "b"]
         }
 
     def test_exists(self):
@@ -551,6 +578,46 @@ class TestAccessorExpression(unittest.TestCase):
         expr = AccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
 
         expected = ""
+        actual = expr.evaluate(self.env)
+
+        self.assertEqual(expected, actual)
+
+    def test_list_value(self):
+        expr = AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+
+        expected = ["a", "b"]
+        actual = expr.evaluate(self.env)
+
+        self.assertListEqual(expected, actual)
+
+
+class TestListAccessorExpression(unittest.TestCase):
+    def setUp(self) -> None:
+        self.env = {
+            "A": "some_value",
+            "LIST": ["a", "b"]
+        }
+
+    def test_single_value(self):
+        expr = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
+
+        expected = "some_value"
+        actual = expr.evaluate(self.env)
+
+        self.assertEqual(expected, actual)
+
+    def test_does_not_exist(self):
+        expr = ListAccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0), " ")
+
+        expected = ""
+        actual = expr.evaluate(self.env)
+
+        self.assertEqual(expected, actual)
+
+    def test_list_value(self):
+        expr = ListAccessorExpression(Token(TokenKind.IDENT, "LIST", 0), " ")
+
+        expected = "a b"
         actual = expr.evaluate(self.env)
 
         self.assertEqual(expected, actual)

@@ -21,18 +21,26 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_parse_many(self):
-        content = "[FIELDS...:-f,--fields]"
+    def test_parse_any(self):
+        content = "[FIELDS*:-f,--fields]"
 
         expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.ANY), ["-f", "--fields"], False, False)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
 
-    def test_positional_many(self):
-        content = "<SRC...>"
+    def test_positional_any(self):
+        content = "<SRC*>"
 
         expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True)
+        actual = parse_argument(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_at_least_one(self):
+        content = "[FIELDS...:-f,--fields]"
+
+        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.AT_LEAST_ONE), ["-f", "--fields"], False, False)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
@@ -56,7 +64,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_missing_var_name(self):
         content = "<...>"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.ANY), list(), True, True)
+        expected = ArgumentPattern(None, ArgNum(Quantifier.AT_LEAST_ONE), list(), True, True)
         actual = parse_argument(content)
 
         self.assertEqual(expected, actual)
