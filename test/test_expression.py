@@ -1,3 +1,4 @@
+import os.path
 import unittest
 from expression import *
 import expression
@@ -805,6 +806,17 @@ class TestValueCommandExpression(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_multiple(self):
+        expr = ValueCommandExpression(
+            Token(TokenKind.COMMAND, "basename", 0),
+            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+        )
+
+        self.assertListEqual(
+            [os.path.basename(__file__), os.path.basename(__file__)],
+            expr.evaluate({"LIST": [__file__, __file__]})
+        )
+
     def test_unknown_command(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "unknown_command", 0),
@@ -818,7 +830,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
     def test_exists(self):
         expr = ConditionalCommandExpression(
             False,
-            Token(TokenKind.IDENT, "exists", 0),
+            Token(TokenKind.COMMAND, "exists", 0),
             StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
 
         self.assertTrue(expr.evaluate(dict()))
@@ -830,7 +842,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
     def test_isfile(self):
         expr = ConditionalCommandExpression(
             False,
-            Token(TokenKind.IDENT, "isfile", 0),
+            Token(TokenKind.COMMAND, "isfile", 0),
             StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
 
         self.assertTrue(expr.evaluate(dict()))
@@ -842,7 +854,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
     def test_isdir(self):
         expr = ConditionalCommandExpression(
             False,
-            Token(TokenKind.IDENT, "isdir", 0),
+            Token(TokenKind.COMMAND, "isdir", 0),
             StringLiteralExpression(Token(TokenKind.STRING_LITERAL, os.path.dirname(__file__), 0)))
 
         self.assertTrue(expr.evaluate(dict()))
@@ -850,6 +862,27 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr.negate = True
 
         self.assertFalse(expr.evaluate(dict()))
+
+    def test_multiple(self):
+        expr = ConditionalCommandExpression(
+            False,
+            Token(TokenKind.COMMAND, "exists", 0),
+            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+        )
+
+        self.assertTrue(expr.evaluate({
+            "LIST": [__file__, __file__]
+        }))
+
+        self.assertFalse(expr.evaluate({
+            "LIST": [__file__, "i_do_not_exist"]
+        }))
+
+        expr.negate = False
+
+        self.assertTrue(expr.evaluate({
+            "LIST": [__file__, __file__]
+        }))
 
     def test_unknown_command(self):
         expr = ConditionalCommandExpression(

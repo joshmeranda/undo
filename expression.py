@@ -194,7 +194,7 @@ class ConditionalExpression(UndoExpression):
                 and self.operator == other.operator
                 and self.right == other.right)
 
-    def evaluate(self, env: dict[str, str]) -> bool:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
         """Evaluate the result of the expression given the map of identifier and values."""
         if self.operator.kind == TokenKind.AND:
             return (self.negate
@@ -313,7 +313,7 @@ class ExistenceExpression(ConditionalExpression):
                 and self.operator == other.operator
                 and self.right == other.right)
 
-    def evaluate(self, env: dict[str, str]) -> bool:
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
         if self.negate:
             return env.setdefault(self.identifier.body, "") == ""
         else:
@@ -337,11 +337,13 @@ class CommandExpression(abc.ABC):
 
 
 class ValueCommandExpression(CommandExpression, ValueExpression):
-    """A command expression which will return a string value."""
+    """A command expression which will return a string value.
 
-    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        arg = self.argument.evaluate(env)
+    If the given value returns a list of values, evaluate will return a copy of the list with each element having been
+    run through the specified command. (eg `dirname(["/a/b", "c/d"])` will return ["a", "c"])
+    """
 
+    def __run(self, arg: str) -> str:
         if self.command.body == "dirname":
             return os.path.dirname(arg)
         elif self.command.body == "basename":
@@ -353,9 +355,21 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
 
         raise UnknownCommandException(self.command)
 
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
+        arg = self.argument.evaluate(env)
+
+        if isinstance(arg, list):
+            return [self.__run(i) for i in arg]
+        else:
+            return self.__run(arg)
+
 
 class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
-    """A command expression which will return a boolean value."""
+    """A command expression which will return a boolean value.
+
+    If the given value returns a lit of values, evaluate will return the value as if the result of the command being
+    applied to each element were compared with AND.
+    """
 
     def __init__(self, negate: bool, command: Token, argument: ValueExpression):
         super(ConditionalCommandExpression, self).__init__(command, argument)
@@ -370,9 +384,7 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
                 and self.operator == other.operator
                 and self.right == other.right)
 
-    def evaluate(self, env: dict[str, str]) -> bool:
-        arg = self.argument.evaluate(env)
-
+    def __run(self, arg: str):
         if self.command.body == "exists":
             result = os.path.exists(arg)
         elif self.command.body == "isfile":
@@ -383,6 +395,14 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
             raise UnknownCommandException(self.command)
 
         return result if not self.negate else not result
+
+    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
+        arg = self.argument.evaluate(env)
+
+        if isinstance(arg, list):
+            return all(self.__run(i) for i in arg)
+        else:
+            return self.__run(arg)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
