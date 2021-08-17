@@ -214,36 +214,33 @@ class ConditionalExpression(UndoExpression):
 class AccessorExpression(ValueExpression):
     """A simple expression which will resolve to a value given an identifier."""
 
-    def __init__(self, identifier: Token):
+    def __init__(self, identifier: Token, list_expand: bool, delim: typing.Optional[str] = None):
         self.identifier = identifier
+        self.list_expand = list_expand
+        self.delim = delim
 
     def __eq__(self, other) -> bool:
         return(isinstance(other, AccessorExpression)
-               and self.identifier == other.identifier)
+               and self.identifier == other.identifier
+               and self.list_expand == other.list_expand
+               and self.delim == other.delim)
+
+    def no_expand_evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
+        """Same as evaluate expect that list expansion is not performed.
+
+        Note that this means that responsibility to join the list value with the delimiter is passed to the caller.
+        """
+        return env.setdefault(self.identifier.body, "")
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
         """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env."""
-        return env.setdefault(self.identifier.body, "")
-
-
-class ListAccessorExpression(AccessorExpression):
-    """Essentially the same as an AccessorExpression, but differs in that it will always return a string."""
-
-    def __init__(self, identifier: Token, delimiter: str):
-        super().__init__(identifier)
-
-        self.__delim = delimiter
-
-    def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        """Retrieve the value corresponding to this expression's identifier or "" if it does not exist in env.
-
-        If the value is a list, the elements will be joined using a delimiter.
-        """
-
         val = env.setdefault(self.identifier.body, "")
 
-        if isinstance(val, list):
-            val = self.__delim.join(val)
+        if self.list_expand and isinstance(val, list):
+            if self.delim is None:
+                raise ValueError(f"delim cannot be None when expanding list")
+
+            return self.delim.join(val)
 
         return val
 
@@ -356,10 +353,18 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
         raise UnknownCommandException(self.command)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        arg = self.argument.evaluate(env)
+        if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
+            arg = self.argument.no_expand_evaluate(env)
+        else:
+            arg = self.argument.evaluate(env)
 
         if isinstance(arg, list):
-            return [self.__run(i) for i in arg]
+            result = [self.__run(i) for i in arg]
+
+            if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
+                return self.argument.delim.join(result)
+
+            return result
         else:
             return self.__run(arg)
 
@@ -397,7 +402,10 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
         return result if not self.negate else not result
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
-        arg = self.argument.evaluate(env)
+        if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
+            arg = self.argument.no_expand_evaluate(env)
+        else:
+            arg = self.argument.evaluate(env)
 
         if isinstance(arg, list):
             return all(self.__run(i) for i in arg)
@@ -488,9 +496,10 @@ def __parse_accessor_expression_tokens(tokens: list[Token]) -> (AccessorExpressi
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
 
     if len(tokens) >= 3 and tokens[2].kind == TokenKind.ELLIPSE:
-        return ListAccessorExpression(tokens[1], " "), 3
+        # todo: allow specifying a custom delimiter
+        return AccessorExpression(tokens[1], True, " "), 3
 
-    return AccessorExpression(tokens[1]), 2
+    return AccessorExpression(tokens[1], False), 2
 
 
 def __parse_ternary_expression_tokens(tokens: list[Token]) -> (TernaryExpression, int):

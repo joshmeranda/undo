@@ -11,10 +11,10 @@ class TestUndo(unittest.TestCase):
     CLI_RESOURCE_PATH = os.path.join(RESOURCE_DIR_PATH, "cli")
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         os.environ["UNDO_INCLUDE_DIRS"] = TestUndo.CLI_RESOURCE_PATH
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.skipTest("test fail outside of pycharm")
 
     def test_no_match(self):

@@ -132,6 +132,17 @@ class TestTokenize(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_tokenize_accessor_with_ellipse(self):
+        expected = [
+            Token(TokenKind.ACCESSOR, "$", 1),
+            Token(TokenKind.IDENT, "IDENT", 2),
+            Token(TokenKind.ELLIPSE, "...", 7)
+        ]
+
+        actual = tokenize("$IDENT...")
+
+        self.assertListEqual(expected, actual)
+
     def test_unrecognized_token(self):
         with self.assertRaises(ExpressionError):
             tokenize("_IDENTS_CANNOT_START_WITH_AN_UNDERSCORE")
@@ -156,7 +167,7 @@ class TestParseValue(unittest.TestCase):
             Token(TokenKind.IDENT, "A", 0),
         ]
 
-        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -169,7 +180,7 @@ class TestParseValue(unittest.TestCase):
             Token(TokenKind.ELLIPSE, "...", 0)
         ]
 
-        expected = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0), True, " ")
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -189,7 +200,7 @@ class TestParseValue(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ValueCommandExpression(command, AccessorExpression(argument))
+        expected = ValueCommandExpression(command, AccessorExpression(argument, False))
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -210,8 +221,8 @@ class TestParseValue(unittest.TestCase):
 
         expected = TernaryExpression(
             ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
-            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
-            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0), False),
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0), False))
 
         actual, offset = parse_value_tokens(tokens)
 
@@ -285,7 +296,7 @@ class TestParseConditionalExpression(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ConditionalCommandExpression(False, command, AccessorExpression(argument))
+        expected = ConditionalCommandExpression(False, command, AccessorExpression(argument, False))
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -324,7 +335,7 @@ class TestParseAccessorTokens(unittest.TestCase):
             Token(TokenKind.IDENT, "A", 0)
         ]
 
-        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)
         actual, offset = parse_accessor_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -337,7 +348,7 @@ class TestParseAccessorTokens(unittest.TestCase):
             Token(TokenKind.ELLIPSE, "...", 0)
         ]
 
-        expected = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
+        expected = AccessorExpression(Token(TokenKind.IDENT, "A", 0), True, " ")
         actual, offset = parse_accessor_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -367,8 +378,8 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
 
         expected = TernaryExpression(
             ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
-            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
-            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0), False),
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0), False))
 
         actual, offset = parse_ternary_tokens(tokens)
 
@@ -386,7 +397,7 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
 
         expected = TernaryExpression(
             ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
-            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0), False),
             None)
         actual, offset = parse_ternary_tokens(tokens)
 
@@ -409,7 +420,7 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             ExistenceExpression(True, Token(TokenKind.IDENT, "A", 0),
                                 operator=Token(TokenKind.AND, "&&", 0),
                                 right=ExistenceExpression(False, Token(TokenKind.IDENT, "B", 0))),
-            AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
+            AccessorExpression(Token(TokenKind.IDENT, "B", 0), False),
             None)
         actual, offset = parse_ternary_tokens(tokens)
 
@@ -439,9 +450,9 @@ class TestParseTernaryExpressionTokens(unittest.TestCase):
             ExistenceExpression(False, Token(TokenKind.IDENT, "A", 0)),
             TernaryExpression(
                 ExistenceExpression(False, Token(TokenKind.IDENT, "B", 0)),
-                AccessorExpression(Token(TokenKind.IDENT, "B", 0)),
+                AccessorExpression(Token(TokenKind.IDENT, "B", 0), False),
                 StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "", 0))),
-            AccessorExpression(Token(TokenKind.IDENT, "C", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "C", 0), False))
         actual, offset = parse_ternary_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -512,7 +523,7 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
         expected = ValueCommandExpression(
             Token(TokenKind.COMMAND, "dirname", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "A", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "A", 0), False))
         actual, offset = parse_value_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -548,7 +559,7 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
         expected = ConditionalCommandExpression(
             True,
             Token(TokenKind.COMMAND, "isfile", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "A", 0)))
+            AccessorExpression(Token(TokenKind.IDENT, "A", 0), False))
         actual, offset = parse_conditional_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -561,14 +572,14 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
 
 
 class TestAccessorExpression(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.env = {
             "A": "some_value",
             "LIST": ["a", "b"]
         }
 
     def test_exists(self):
-        expr = AccessorExpression(Token(TokenKind.IDENT, "A", 0))
+        expr = AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)
 
         expected = "some_value"
         actual = expr.evaluate(self.env)
@@ -576,7 +587,7 @@ class TestAccessorExpression(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_does_not_exist(self):
-        expr = AccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
+        expr = AccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0), False)
 
         expected = ""
         actual = expr.evaluate(self.env)
@@ -584,44 +595,34 @@ class TestAccessorExpression(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_list_value(self):
-        expr = AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+        expr = AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)
 
         expected = ["a", "b"]
         actual = expr.evaluate(self.env)
 
         self.assertListEqual(expected, actual)
 
+    def test_list_expand_single_value(self):
+        expr = AccessorExpression(Token(TokenKind.IDENT, "A", 0), True, ",")
 
-class TestListAccessorExpression(unittest.TestCase):
-    def setUp(self) -> None:
-        self.env = {
-            "A": "some_value",
-            "LIST": ["a", "b"]
-        }
-
-    def test_single_value(self):
-        expr = ListAccessorExpression(Token(TokenKind.IDENT, "A", 0), " ")
-
-        expected = "some_value"
+        expected = self.env.get("A")
         actual = expr.evaluate(self.env)
 
         self.assertEqual(expected, actual)
 
-    def test_does_not_exist(self):
-        expr = ListAccessorExpression(Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0), " ")
-
-        expected = ""
-        actual = expr.evaluate(self.env)
-
-        self.assertEqual(expected, actual)
-
-    def test_list_value(self):
-        expr = ListAccessorExpression(Token(TokenKind.IDENT, "LIST", 0), " ")
+    def test_expand_test_list_value(self):
+        expr = AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), True, " ")
 
         expected = "a b"
         actual = expr.evaluate(self.env)
 
         self.assertEqual(expected, actual)
+
+    def test_missing_delim(self):
+        expr = AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), True, None)
+
+        with self.assertRaises(ValueError):
+            expr.evaluate(self.env)
 
 
 class TestTernaryExpression(unittest.TestCase):
@@ -806,16 +807,27 @@ class TestValueCommandExpression(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_multiple(self):
+    def test_no_list_expansion(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "basename", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)
         )
 
-        self.assertListEqual(
-            [os.path.basename(__file__), os.path.basename(__file__)],
-            expr.evaluate({"LIST": [__file__, __file__]})
+        expected = [os.path.basename(__file__), os.path.basename(__file__)]
+        actual = expr.evaluate({"LIST": [__file__, __file__]})
+
+        self.assertListEqual(expected, actual)
+
+    def test_list_expansion(self):
+        expr = ValueCommandExpression(
+            Token(TokenKind.COMMAND, "basename", 0),
+            AccessorExpression(Token(TokenKind.ACCESSOR, "LIST", 0), True, ":")
         )
+
+        expected = f"{os.path.basename(__file__)}:{os.path.basename(__file__)}"
+        actual = expr.evaluate({"LIST": [__file__, __file__]})
+
+        self.assertEqual(expected, actual)
 
     def test_unknown_command(self):
         expr = ValueCommandExpression(
@@ -863,11 +875,32 @@ class TestConditionalCommandExpression(unittest.TestCase):
 
         self.assertFalse(expr.evaluate(dict()))
 
-    def test_multiple(self):
+    def test_no_list_expansion(self):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "exists", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0))
+            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)
+        )
+
+        self.assertTrue(expr.evaluate({
+            "LIST": [__file__, __file__]
+        }))
+
+        self.assertFalse(expr.evaluate({
+            "LIST": [__file__, "i_do_not_exist"]
+        }))
+
+        expr.negate = False
+
+        self.assertTrue(expr.evaluate({
+            "LIST": [__file__, __file__]
+        }))
+
+    def test_list_expansion(self):
+        expr = ConditionalCommandExpression(
+            False,
+            Token(TokenKind.COMMAND, "exists", 0),
+            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), True)
         )
 
         self.assertTrue(expr.evaluate({
