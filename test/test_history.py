@@ -1,6 +1,7 @@
 import unittest
-import history
 import io
+
+from undo import history
 
 
 class TestFishHistory(unittest.TestCase):

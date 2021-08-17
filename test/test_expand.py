@@ -1,6 +1,6 @@
 import unittest
 
-import expand
+from undo import expand
 
 
 class TestExpansion(unittest.TestCase):

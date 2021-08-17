@@ -1,7 +1,7 @@
 import argparse
 import unittest
 
-from pattern import CommandPattern, pattern_to_argparse, ArgumentPattern, ArgNum, Quantifier
+from undo.pattern import CommandPattern, pattern_to_argparse, ArgumentPattern, ArgNum, Quantifier
 
 
 class TestPatternToArgparse(unittest.TestCase):

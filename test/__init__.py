@@ -1,6 +1,6 @@
-# dummy file to make test a package
-from . import test_pattern
-
-from . import test_expression
-from . import test_history
-from . import test_resolve
+from .test_pattern import *
+from .test_expand import *
+from .test_expression import *
+from .test_history import *
+from .test_resolve import *
+from .test_undo import *

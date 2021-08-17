@@ -2,9 +2,10 @@ import argparse
 import logging
 import os
 import shlex
+
 import toml
 
-import pattern
+from undo import pattern
 
 
 class RegistrySpecError(ValueError):

@@ -5,7 +5,7 @@ import unittest
 
 # todo: these tests fail outside of pycharm
 class TestUndo(unittest.TestCase):
-    ENTRYPOINT_PATH = os.path.realpath(os.path.join("..", "undo.py"))
+    ENTRYPOINT_PATH = os.path.realpath(os.path.join("../undo", "__main__.py"))
 
     RESOURCE_DIR_PATH = os.path.join(os.path.dirname(__file__), "resources")
     CLI_RESOURCE_PATH = os.path.join(RESOURCE_DIR_PATH, "cli")

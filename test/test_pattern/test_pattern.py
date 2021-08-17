@@ -1,6 +1,6 @@
 import unittest
 
-from pattern import ArgNum, ArgumentPattern, CommandPattern, Quantifier, parse_argument, parse_command_pattern
+from undo.pattern import ArgNum, ArgumentPattern, CommandPattern, Quantifier, parse_argument, parse_command_pattern
 
 
 class TestArgumentPattern(unittest.TestCase):

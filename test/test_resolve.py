@@ -2,7 +2,7 @@ import io
 import os
 import unittest
 
-import resolve
+from undo import resolve
 
 UndoRegistry = resolve.__UndoRegistry
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import argparse
 import logging
 import os
@@ -6,10 +5,10 @@ import shlex
 import subprocess
 import typing
 
-import expand
-import history
-import resolve
-import utils
+from undo import expand
+from undo import history
+from undo import resolve
+from undo import utils
 
 
 def default_include_dirs():
@@ -113,7 +112,3 @@ def main():
     else:
         print("multiple undo commands found, copy on the the commands below to clipboard to run: ")
         print('\n'.join(f"  {i + 1} ) {command}" for i, command in enumerate(undos)))
-
-
-if __name__ == "__main__":
-    main()
