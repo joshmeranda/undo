@@ -1,3 +1,4 @@
+# todo: make a real documentaion (wiki)
 supported-shells = [
     "fish",
     "bash",
