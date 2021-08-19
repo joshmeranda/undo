@@ -2,7 +2,7 @@ import logging
 import re
 import typing
 
-import expression
+from undo import expression
 
 
 def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> str:

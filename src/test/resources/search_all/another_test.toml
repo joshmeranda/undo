@@ -1,6 +1,0 @@
-supported-shells = ["bash"]
-
-[[entry]]
-cmd = "test"
-undo = "untest"
-precise = true
