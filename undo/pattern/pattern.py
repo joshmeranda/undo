@@ -54,6 +54,9 @@ class ArgumentPattern:
     is_positional: bool
     is_required: bool
 
+    # the delim to use when splitting a list argument into each list element
+    delim: typing.Optional[str]
+
 
 @dataclasses.dataclass
 class CommandPattern:
@@ -65,9 +68,13 @@ class CommandPattern:
 __IDENTIFIER_REGEX = re.compile("[A-Z]+")
 __QUANTIFIER_REGEX = re.compile(r"\*|\?|\.\.\.|[1-9][0-9]*")
 
+__DELIM_REGEX = re.compile(r":(.*):")
+
 __SHORT_REGEX = r"-[a-zA-Z0-9]"
 __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
-__ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|{__LONG_REGEX}")
+
+__ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|"
+                         rf"{__LONG_REGEX}|")
 
 
 def __parse_identifier(content: str) -> (typing.Optional[str], int):
@@ -85,7 +92,7 @@ def __parse_identifier(content: str) -> (typing.Optional[str], int):
 
 
 def __parse_arg_num(content: str) -> (ArgNum, int):
-    """Parse an ArgNum from teh given str."""
+    """Parse an ArgNum from the given str."""
     match = __QUANTIFIER_REGEX.match(content)
 
     if match is None:
@@ -103,6 +110,18 @@ def __parse_arg_num(content: str) -> (ArgNum, int):
         arg_num = ArgNum(Quantifier.N, int(quantifier))
 
     return arg_num, len(quantifier)
+
+
+def __parse_delim(content: str) -> (str, int):
+    """Parse a list delimiter from the given str."""
+    match = __DELIM_REGEX.match(content)
+
+    if match is None:
+        return None, 0
+
+    delim = match.group(1)
+
+    return delim if delim else None, match.end() - match.start()
 
 
 def __parse_args(content: str) -> list[str]:
@@ -142,7 +161,6 @@ def parse_argument(content: str) -> ArgumentPattern:
 
     :param content: teh string content to be parsed.
     :return: the parsed ArgumentPattern if successful.
-    :raise: todo: this should raise an extension of a ValueError
     """
     if len(content) == 0:
         raise ValueError("content may not be empty")
@@ -166,8 +184,16 @@ def parse_argument(content: str) -> ArgumentPattern:
     arg_num, size = __parse_arg_num(content[offset: -1])
     offset += size
 
+    delim = None
+
     if content[offset] == ":":
-        offset += 1
+        delim, size = __parse_delim(content[offset:])
+
+        # compensate for leading colon
+        if delim is None:
+            size += 1
+
+        offset += size
 
     args = __parse_args(content[offset: -1])
 
@@ -180,7 +206,7 @@ def parse_argument(content: str) -> ArgumentPattern:
         ident = (max(args, key=lambda l: len(l)).lstrip('-')
                  .upper().replace("-", "_"))
 
-    return ArgumentPattern(ident, arg_num, args, is_positional, is_required)
+    return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim)
 
 
 def parse_command_pattern(content: str, arg_parser: typing.Callable[[str], ArgumentPattern] = parse_argument) -> CommandPattern:
