@@ -48,8 +48,17 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
 
         if arg.arg_num.quantifier == Quantifier.ANY:
             kwargs["nargs"] = "*"
+
+            if arg.delim is not None and arg.delim != " ":
+                kwargs["nargs"] = "?"
+                kwargs["const"] = []
+                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
         elif arg.arg_num.quantifier == Quantifier.AT_LEAST_ONE:
             kwargs["nargs"] = "+"
+
+            if arg.delim is not None:
+                kwargs["nargs"] = None
+                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
         elif arg.arg_num.count == 0:
             kwargs["action"] = "store_true"
         elif arg.arg_num.count == 1:

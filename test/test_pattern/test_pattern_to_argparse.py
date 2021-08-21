@@ -22,7 +22,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_optional_arg(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, False)
+            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, False, None)
         ])
         parser = pattern_to_argparse(pattern)
 
@@ -37,7 +37,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_required_arg(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, True)
+            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, True, None)
         ])
         parser = pattern_to_argparse(pattern)
 
@@ -52,7 +52,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_positional_arg(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.AT_LEAST_ONE, None), list(), True, True)
+            ArgumentPattern("VAL", ArgNum(Quantifier.AT_LEAST_ONE, None), list(), True, True, None)
         ])
         parser = pattern_to_argparse(pattern)
 
@@ -67,7 +67,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_flag_arg(self):
         command_pattern = CommandPattern("test", list(), [
-            ArgumentPattern("verbose", ArgNum(Quantifier.N, 0), ["--verbose"], False, False)
+            ArgumentPattern("verbose", ArgNum(Quantifier.N, 0), ["--verbose"], False, False, None)
         ])
         parser = pattern_to_argparse(command_pattern)
 
@@ -115,7 +115,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_at_least_one_argument(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, False)
+            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, False, None)
         ])
 
         parser = pattern_to_argparse(pattern)
@@ -130,7 +130,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_any_argnum(self):
         pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False)
+            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False, None)
         ])
 
         parser = pattern_to_argparse(pattern)
@@ -144,6 +144,48 @@ class TestPatternToArgparse(unittest.TestCase):
         actual = parser.parse_args("--list a b".split())
 
         self.assertEqual(expected, actual)
+
+    def test_list_delim_any(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, True, ","),
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c"])
+        actual = parser.parse_args(["--list", "a,b,c"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a"])
+        actual = parser.parse_args(["--list", "a"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=[])
+        actual = parser.parse_args(["--list"])
+
+        self.assertEqual(expected, actual)
+
+    def test_list_delim_at_least_one(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, True, ",")
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c"])
+        actual = parser.parse_args(["--list", "a,b,c"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a"])
+        actual = parser.parse_args(["--list", "a"])
+
+        self.assertEqual(expected, actual)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args(["--list"])
 
 
 if __name__ == "__main__":
