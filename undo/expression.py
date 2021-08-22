@@ -15,6 +15,7 @@ import typing
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
     ELLIPSE = enum.auto()
+    COMMA = enum.auto()
 
     STRING_LITERAL = enum.auto()
     STRING_EXPANSION = enum.auto()
@@ -33,7 +34,7 @@ class TokenKind(enum.Enum):
 
     ACCESSOR = enum.auto()
 
-    # Unknown iss only used to allow for passing a token to TokenError.
+    # Unknown is only used to allow for passing a token to TokenError.
     UNKNOWN = enum.auto()
 
 
@@ -51,7 +52,7 @@ __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|join|exists|isfile|isdir"
 __STRING_LITERAL_REGEX = r"'.*'"
 __STRING_EXPANSION_REGEX = r"\".*\""
-__SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!|\.\.\."
+__SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!|\.\.\.|,|\(|\)"
 __TOKEN_REGEX = re.compile(rf"\s*({__STRING_EXPANSION_REGEX}|"
                            rf"{__STRING_LITERAL_REGEX}|"
                            rf"{__COMMAND_REGEX}|"
@@ -91,6 +92,8 @@ def __tokenize(content) -> list[Token]:
             kind = TokenKind.NOT
         elif body == "...":
             kind = TokenKind.ELLIPSE
+        elif body == ",":
+            kind = TokenKind.COMMA
         elif body == "(":
             kind = TokenKind.OPEN_PARENTHESE
         elif body == ")":
@@ -589,7 +592,7 @@ def __parse_existence_expression_tokens(tokens: list[Token]) -> (ExistenceExpres
     return ExistenceExpression(negate, ident), offset
 
 
-def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int):
+def __parse_command_tokens(tokens: list[Token]) -> (Token, list[ValueExpression], int):
     """Parse the command and argument from a list of tokens"""
     if tokens[0].kind != TokenKind.COMMAND:
         raise UnexpectedTokenError(TokenKind.COMMAND, tokens[0].kind)
@@ -598,20 +601,33 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, ValueExpression, int)
     if tokens[1].kind != TokenKind.OPEN_PARENTHESE:
         raise UnexpectedTokenError(TokenKind.OPEN_PARENTHESE, tokens[1].kind)
 
-    argument, token_count = __parse_value_expression_tokens(tokens[2:])
+    offset = 2
+    arguments = list()
 
-    offset = token_count + 2
+    while True:
+        try:
+            argument, token_count = __parse_value_expression_tokens(tokens[offset:])
+        except ParseError:
+            break
+
+        arguments.append(argument)
+        offset += token_count
+
+        if tokens[offset].kind == TokenKind.COMMA:
+            offset += 1
+        else:
+            break
 
     if tokens[offset].kind != TokenKind.CLOSE_PARENTHESE:
         raise UnexpectedTokenError(TokenKind.CLOSE_PARENTHESE, tokens[offset].kind)
 
-    return command, argument, offset + 1
+    return command, arguments, offset + 1
 
 
 def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
-    command, argument, token_count = __parse_command_tokens(tokens)
+    command, arguments, token_count = __parse_command_tokens(tokens)
 
-    return ValueCommandExpression(command, argument), token_count
+    return ValueCommandExpression(command, arguments), token_count
 
 
 def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (ConditionalCommandExpression, int):
@@ -622,10 +638,10 @@ def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (Condi
         negate = True
         offset += 1
 
-    command, argument, token_count = __parse_command_tokens(tokens[offset:])
+    command, arguments, token_count = __parse_command_tokens(tokens[offset:])
     offset += token_count
 
-    return ConditionalCommandExpression(negate, command, argument), offset
+    return ConditionalCommandExpression(negate, command, arguments), offset
 
 
 def parse(content: str) -> UndoExpression:

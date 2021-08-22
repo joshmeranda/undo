@@ -79,7 +79,7 @@ class TestTokenize(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_tokenize_command(self):
+    def test_tokenize_command_name(self):
         self.assertEqual([Token(TokenKind.COMMAND, "dirname", 1)], tokenize("dirname"))
         self.assertEqual([Token(TokenKind.COMMAND, "basename", 1)], tokenize("basename"))
         self.assertEqual([Token(TokenKind.COMMAND, "abspath", 1)], tokenize("abspath"))
@@ -88,6 +88,34 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual([Token(TokenKind.COMMAND, "isfile", 1)], tokenize("isfile"))
         self.assertEqual([Token(TokenKind.COMMAND, "isdir", 1)], tokenize("isdir"))
         self.assertEqual([Token(TokenKind.COMMAND, "join", 1)], tokenize("join"))
+
+    def test_tokenize_command_single_arg(self):
+        expected = [
+            Token(TokenKind.COMMAND, "join", 1),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 5),
+            Token(TokenKind.ACCESSOR, "$", 6),
+            Token(TokenKind.IDENT, "LIST", 7),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 11),
+        ]
+
+        actual = tokenize("join($LIST)")
+
+        self.assertListEqual(expected, actual)
+
+    def test_tokenize_command_multiple_args(self):
+        expected = [
+            Token(TokenKind.COMMAND, "join", 1),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 5),
+            Token(TokenKind.ACCESSOR, "$", 6),
+            Token(TokenKind.IDENT, "LIST", 7),
+            Token(TokenKind.COMMA, ",", 11),
+            Token(TokenKind.STRING_LITERAL, ",", 13),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 16),
+        ]
+
+        actual = tokenize("join($LIST, ',')")
+
+        self.assertListEqual(expected, actual)
 
     def test_tokenize_string_literal(self):
         expected = [
@@ -514,7 +542,17 @@ class TestParseExistenceTokens(unittest.TestCase):
 
 
 class TestParseCommandExpressionTokens(unittest.TestCase):
-    def test_parse_basic(self):
+    def test_parse_no_arg(self):
+        tokens = [
+            Token(TokenKind.COMMAND, "dirname", 0),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
+        ]
+
+        with self.assertRaises(WrongArgumentNum):
+            parse_value_command_tokens(tokens)
+
+    def test_parse_single_arg(self):
         tokens = [
             Token(TokenKind.COMMAND, "dirname", 0),
             Token(TokenKind.OPEN_PARENTHESE, "(", 0),
@@ -531,6 +569,29 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
         self.assertEqual(expected, actual)
         self.assertEqual(5, offset)
+
+    def test_parse_multiple_args(self):
+        tokens = [
+            Token(TokenKind.COMMAND, "join", 0),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
+            Token(TokenKind.IDENT, "LIST", 0),
+            Token(TokenKind.COMMA, ",", 0),
+            Token(TokenKind.STRING_LITERAL, ",", 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
+        ]
+
+        expected = ValueCommandExpression(
+            Token(TokenKind.COMMAND, "join", 0),
+            [
+                AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False),
+                StringLiteralExpression(Token(TokenKind.STRING_LITERAL, ",", 0)),
+            ]
+        )
+        actual, offset = parse_value_command_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(7, offset)
 
     def test_unexpected_token(self):
         for kind in list(TokenKind):
