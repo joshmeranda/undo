@@ -182,6 +182,7 @@ class TestUndoRegistry(unittest.TestCase):
 class TestResolve(unittest.TestCase):
     TEST_SEARCH_ALL_DIR = os.path.join(RESOURCE_DIR_PATH, "search_all")
     TEST_ALLOW_IMPRECISE = os.path.join(RESOURCE_DIR_PATH, "allow_imprecise")
+    TEST_SUPPORT_ALL = os.path.join(RESOURCE_DIR_PATH, "support_all")
 
     def test_basic_no_search_all(self):
         expected = [(dict(), "untest")]
@@ -218,6 +219,12 @@ class TestResolve(unittest.TestCase):
     def test_search_unsupported_shell(self):
         expected = []
         actual = resolve.resolve("test", [TestResolve.TEST_SEARCH_ALL_DIR], False, True, "unsupported_shell")
+
+        self.assertListEqual(expected, actual)
+
+    def test_support_all(self):
+        expected = [(dict(), "untest")]
+        actual = resolve.resolve("test", [TestResolve.TEST_SUPPORT_ALL], False, True, "unsupported_shell")
 
         self.assertListEqual(expected, actual)
 

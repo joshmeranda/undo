@@ -28,7 +28,7 @@ class __UndoRegistry:
 
         data = toml.load(file)
 
-        self.__shells = data.setdefault(self.__SHELLS, [])
+        self.__shells = data.setdefault(self.__SHELLS, "all")
 
         try:
             self.__entries = [{
@@ -48,7 +48,7 @@ class __UndoRegistry:
         :return: True if supported, and False if not.
         """
 
-        is_supported = shell in self.__shells
+        is_supported = self.__shells == "all" or shell in self.__shells
 
         if not is_supported:
             logging.debug(f"shell '{shell}' is not supported")

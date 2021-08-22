@@ -1,0 +1,4 @@
+[[entry]]
+cmd = "test"
+undo = "untest"
+precise = true
