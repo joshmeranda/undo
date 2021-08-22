@@ -12,8 +12,6 @@ import typing
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-# todo: add ellipse (ie '...') for group command calls
-# todo: deal will command expansion with ellipse
 class TokenKind(enum.Enum):
     IDENT = enum.auto()
     ELLIPSE = enum.auto()
@@ -50,7 +48,7 @@ class Token:
 
 
 __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
-__COMMAND_REGEX = r"dirname|basename|abspath|env|exists|isfile|isdir"
+__COMMAND_REGEX = r"dirname|basename|abspath|env|join|exists|isfile|isdir"
 __STRING_LITERAL_REGEX = r"'.*'"
 __STRING_EXPANSION_REGEX = r"\".*\""
 __SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!|\.\.\."
@@ -152,6 +150,11 @@ class UnexpectedEndOfLineError(ParseError):
 
 class EvaluationError(ExpressionError):
     """Raise for any error that occurs during evaluation."""
+
+
+class WrongArgumentNum(ExpressionError):
+    def __init__(self, expected: int, actual: int):
+        super().__init__(f"wrong argument count, expected {expected} but found {actual}")
 
 
 class UnknownCommandException(EvaluationError):
@@ -323,14 +326,14 @@ class ExistenceExpression(ConditionalExpression):
 class CommandExpression(abc.ABC):
     """An expression which will generate values based on inputs."""
 
-    def __init__(self, command: Token, argument: ValueExpression):
+    def __init__(self, command: Token, arguments: list[ValueExpression]):
         self.command = command
-        self.argument = argument
+        self.arguments = arguments
 
     def __eq__(self, other) -> bool:
         return (isinstance(other, CommandExpression)
                 and self.command == other.command
-                and self.argument == other.argument)
+                and self.arguments == other.arguments)
 
 
 class ValueCommandExpression(CommandExpression, ValueExpression):
@@ -340,33 +343,50 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
     run through the specified command. (eg `dirname(["/a/b", "c/d"])` will return ["a", "c"])
     """
 
-    def __run(self, arg: str) -> str:
+    def __init__(self, command: Token, arguments: list[ValueExpression]):
+        if command.body in {"dirname", "basename", "abspath", "env"} and len(arguments) != 1:
+            raise WrongArgumentNum(1, len(arguments))
+        elif command.body == "join" and len(arguments) != 2:
+            raise WrongArgumentNum(2, len(arguments))
+
+        super().__init__(command, arguments)
+
+    @staticmethod
+    def __wrapper(f: typing.Callable[[str], str], arg: typing.Union[str, list[str]]) -> typing.Union[str, list[str]]:
+        return [f(i) for i in arg] if isinstance(arg, list) else f(arg)
+
+    def __run(self, args: list[str]) -> str:
+
         if self.command.body == "dirname":
-            return os.path.dirname(arg)
+            return self.__wrapper(os.path.dirname, args[0])
         elif self.command.body == "basename":
-            return os.path.basename(arg)
+            return self.__wrapper(os.path.basename, args[0])
         elif self.command.body == "abspath":
-            return os.path.abspath(arg)
+            return self.__wrapper(os.path.abspath, args[0])
         elif self.command.body == "env":
-            return os.getenv(arg)
+            return self.__wrapper(os.getenv, args[0])
+        elif self.command.body == "join":
+            return args[1].join(args[0])
 
         raise UnknownCommandException(self.command)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
-            arg = self.argument.no_expand_evaluate(env)
-        else:
-            arg = self.argument.evaluate(env)
+        args = [arg.no_expand_evaluate(env) if isinstance(arg, AccessorExpression) and arg.list_expand
+                else arg.evaluate(env)
+                for arg in self.arguments]
 
-        if isinstance(arg, list):
-            result = [self.__run(i) for i in arg]
+        if len(args) == 1:
+            result = self.__run(args)
 
-            if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
-                return self.argument.delim.join(result)
+            if isinstance(args[0], list):
+                raw_arg = self.arguments[0]
+
+                if isinstance(raw_arg, AccessorExpression) and raw_arg.list_expand:
+                    return raw_arg.delim.join(result)
 
             return result
-        else:
-            return self.__run(arg)
+        elif len(args) == 2:
+            return self.__run(args)
 
 
 class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
@@ -376,41 +396,44 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
     applied to each element were compared with AND.
     """
 
-    def __init__(self, negate: bool, command: Token, argument: ValueExpression):
-        super(ConditionalCommandExpression, self).__init__(command, argument)
+    def __init__(self, negate: bool, command: Token, arguments: list[ValueExpression]):
+        if len(arguments) != 1:
+            raise WrongArgumentNum(1, len(arguments))
+
+        super(ConditionalCommandExpression, self).__init__(command, arguments)
         super(CommandExpression, self).__init__(negate, None, None)
 
     def __eq__(self, other) -> bool:
         return (isinstance(other, ConditionalCommandExpression)
                 and self.negate == other.negate
                 and self.command == other.command
-                and self.argument == other.argument
+                and self.arguments == other.arguments
 
                 and self.operator == other.operator
                 and self.right == other.right)
 
+    @staticmethod
+    def __wrapper(f: typing.Callable[[str], bool], arg: typing.Union[str, list[str]]) -> bool:
+        return all(f(i) for i in arg) if isinstance(arg, list) else f(arg)
+
     def __run(self, arg: str):
         if self.command.body == "exists":
-            result = os.path.exists(arg)
+            result = self.__wrapper(os.path.exists, arg)
         elif self.command.body == "isfile":
-            result = os.path.isfile(arg)
+            result = self.__wrapper(os.path.isfile, arg)
         elif self.command.body == "isdir":
-            result = os.path.isdir(arg)
+            result = self.__wrapper(os.path.isdir, arg)
         else:
             raise UnknownCommandException(self.command)
 
         return result if not self.negate else not result
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
-        if isinstance(self.argument, AccessorExpression) and self.argument.list_expand:
-            arg = self.argument.no_expand_evaluate(env)
-        else:
-            arg = self.argument.evaluate(env)
-
-        if isinstance(arg, list):
-            return all(self.__run(i) for i in arg)
-        else:
-            return self.__run(arg)
+        args = [arg.no_expand_evaluate(env) if isinstance(arg, AccessorExpression) and arg.list_expand
+                else arg.evaluate(env)
+                for arg in self.arguments]
+        
+        return all(self.__run(i) for i in args)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

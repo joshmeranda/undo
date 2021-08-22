@@ -87,6 +87,7 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual([Token(TokenKind.COMMAND, "exists", 1)], tokenize("exists"))
         self.assertEqual([Token(TokenKind.COMMAND, "isfile", 1)], tokenize("isfile"))
         self.assertEqual([Token(TokenKind.COMMAND, "isdir", 1)], tokenize("isdir"))
+        self.assertEqual([Token(TokenKind.COMMAND, "join", 1)], tokenize("join"))
 
     def test_tokenize_string_literal(self):
         expected = [
@@ -201,7 +202,7 @@ class TestParseValue(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ValueCommandExpression(command, AccessorExpression(argument, False))
+        expected = ValueCommandExpression(command, [AccessorExpression(argument, False)])
         actual, offset = parse_value_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -297,7 +298,7 @@ class TestParseConditionalExpression(unittest.TestCase):
             Token(TokenKind.CLOSE_PARENTHESE, ')', 0),
         ]
 
-        expected = ConditionalCommandExpression(False, command, AccessorExpression(argument, False))
+        expected = ConditionalCommandExpression(False, command, [AccessorExpression(argument, False)])
         actual, offset = parse_conditional_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -524,7 +525,8 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
         expected = ValueCommandExpression(
             Token(TokenKind.COMMAND, "dirname", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "A", 0), False))
+            [AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)]
+        )
         actual, offset = parse_value_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -560,7 +562,8 @@ class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
         expected = ConditionalCommandExpression(
             True,
             Token(TokenKind.COMMAND, "isfile", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "A", 0), False))
+            [AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)]
+        )
         actual, offset = parse_conditional_command_tokens(tokens)
 
         self.assertEqual(expected, actual)
@@ -762,7 +765,8 @@ class TestValueCommandExpression(unittest.TestCase):
     def test_dirname(self):
         expr = ValueCommandExpression(
             Token(TokenKind.IDENT, "dirname", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/dir/and_a_file", 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/dir/and_a_file", 0))]
+        )
 
         expected = "/some/dir"
         actual = expr.evaluate(dict())
@@ -772,7 +776,8 @@ class TestValueCommandExpression(unittest.TestCase):
     def test_basename(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "basename", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/path/to/a/file", 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "/some/path/to/a/file", 0))]
+        )
 
         expected = "file"
         actual = expr.evaluate(dict())
@@ -785,7 +790,8 @@ class TestValueCommandExpression(unittest.TestCase):
 
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "abspath", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, basename, 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, basename, 0))]
+        )
 
         expected = os.path.join(cwd, basename)
         actual = expr.evaluate(dict())
@@ -801,17 +807,32 @@ class TestValueCommandExpression(unittest.TestCase):
 
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "env", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, env_var, 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, env_var, 0))]
+        )
 
         expected = env_var_value
         actual = expr.evaluate(dict())
 
         self.assertEqual(expected, actual)
 
+    def test_join(self):
+        expr = ValueCommandExpression(
+            Token(TokenKind.COMMAND, "join", 0),
+            [
+                AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False),
+                StringLiteralExpression(Token(TokenKind.STRING_LITERAL, ",", 0))
+            ]
+        )
+
+        expected = "a,b,c"
+        actual = expr.evaluate({"LIST": ["a", "b", "c"]})
+
+        self.assertEqual(expected, actual)
+
     def test_no_list_expansion(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "basename", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)
+            [AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)]
         )
 
         expected = [os.path.basename(__file__), os.path.basename(__file__)]
@@ -822,7 +843,7 @@ class TestValueCommandExpression(unittest.TestCase):
     def test_list_expansion(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "basename", 0),
-            AccessorExpression(Token(TokenKind.ACCESSOR, "LIST", 0), True, ":")
+            [AccessorExpression(Token(TokenKind.ACCESSOR, "LIST", 0), True, ":")]
         )
 
         expected = f"{os.path.basename(__file__)}:{os.path.basename(__file__)}"
@@ -833,7 +854,8 @@ class TestValueCommandExpression(unittest.TestCase):
     def test_unknown_command(self):
         expr = ValueCommandExpression(
             Token(TokenKind.COMMAND, "unknown_command", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0))]
+        )
 
         with self.assertRaises(UnknownCommandException):
             expr.evaluate(dict())
@@ -844,7 +866,8 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "exists", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0))]
+        )
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -856,7 +879,8 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "isfile", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, __file__, 0))]
+        )
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -868,7 +892,8 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "isdir", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, os.path.dirname(__file__), 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, os.path.dirname(__file__), 0))]
+        )
 
         self.assertTrue(expr.evaluate(dict()))
 
@@ -880,7 +905,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "exists", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)
+            [AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), False)]
         )
 
         self.assertTrue(expr.evaluate({
@@ -901,7 +926,7 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.COMMAND, "exists", 0),
-            AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), True)
+            [AccessorExpression(Token(TokenKind.IDENT, "LIST", 0), True)]
         )
 
         self.assertTrue(expr.evaluate({
@@ -922,7 +947,8 @@ class TestConditionalCommandExpression(unittest.TestCase):
         expr = ConditionalCommandExpression(
             False,
             Token(TokenKind.IDENT, "unknown_command", 0),
-            StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0)))
+            [StringLiteralExpression(Token(TokenKind.STRING_LITERAL, "arg", 0))]
+        )
 
         with self.assertRaises(UnknownCommandException):
             expr.evaluate(dict())
