@@ -52,9 +52,21 @@ class TestExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_multiple_list_expansion(self):
+    def test_multiple_no_list_expansion(self):
+        expected = "list a d; list b e; list c f"
+        actual = expand.expand("list % $LISTA % % $LISTB %", {
+                "LISTA": ['a', 'b', 'c'],
+                "LISTB": ['d', 'e', 'f'],
+            })
+
+        self.assertEqual(expected, actual)
+
+    def test_multiple_unique_no_list_expansion(self):
         with self.assertRaises(ValueError):
-            expand.expand("% $LIST % % $LIST %", {"LIST": ['a', 'b', 'c']})
+            expand.expand("% $LISTA % % $LISTB %", {
+                "LISTA": ['a', 'b', 'c'],
+                "LISTB": ['d', 'e', 'f', 'g'],
+            })
 
 
 if __name__ == "__main__":
