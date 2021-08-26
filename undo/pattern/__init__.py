@@ -33,8 +33,6 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
 
     positional_count = 0
 
-    kwargs = dict()
-
     for arg in command_pattern.arguments:
         if arg.is_positional:
             if arg.var_name is not None:
@@ -45,6 +43,8 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
             positional_count += 1
         else:
             names = arg.args
+
+        kwargs = dict()
 
         if arg.arg_num.quantifier == Quantifier.ANY:
             kwargs["nargs"] = "*"

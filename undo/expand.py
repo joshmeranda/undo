@@ -5,33 +5,6 @@ import typing
 from undo import expression
 
 
-# def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> str:
-#     """Join the expanded items into a single or multiple commands.
-#
-#     :param expanded: the expanded items to join.
-#     :param sep: the separator to use when expanding a list value across multiple commands.
-#     :return: The string value
-#     """
-#
-#     list_values = {tuple(val) for val in expanded if isinstance(val, list)}
-#
-#     if len(list_values) > 1:
-#         raise ValueError("there can be only one non-expanded list")
-#
-#     if len(list_values) == 0:
-#         return "".join(expanded)
-#
-#     expansion_list = list_values.pop()
-#     index = expanded.index(expansion_list)
-#
-#     prefix = expanded[:index]
-#     postfix = expanded[index + 1:]
-#
-#     return sep.join([
-#         "".join(prefix + [i] + postfix) for i in expansion_list
-#     ])
-
-
 def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> str:
     """Join the expanded items into a single or multiple commands.
 

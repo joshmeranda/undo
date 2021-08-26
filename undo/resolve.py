@@ -83,7 +83,7 @@ class __UndoRegistry:
                     else:
                         logging.debug(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}' but was not"
                                       f"precise enough")
-                except argparse.ArgumentError:
+                except argparse.ArgumentError as err:
                     logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}'")
 
         return undos
@@ -133,7 +133,8 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
     return undos
 
 
-def resolve(command: str, include_dirs: list[str], search_all: bool, allow_imprecise, shell: str) -> list[(dict, str)]:
+def resolve(command: str, include_dirs: list[str], search_all: bool, allow_imprecise: bool,
+            shell: str) -> list[(dict, str)]:
     """Resolve the given command to the appropriate undo command.
 
     If search_all is False, resolve will return the undo patterns in the first file found with one or more matching undo
