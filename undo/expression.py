@@ -625,9 +625,12 @@ def __parse_command_tokens(tokens: list[Token]) -> (Token, list[ValueExpression]
 
 
 def __parse_value_command_expression_tokens(tokens: list[Token]) -> (ValueCommandExpression, int):
-    command, arguments, token_count = __parse_command_tokens(tokens)
+    command, arguments, offset = __parse_command_tokens(tokens)
 
-    return ValueCommandExpression(command, arguments), token_count
+    if command.body not in {"dirname", "basename", "abspath", "env", "join"}:
+        raise ParseError("expected ValueCommand but found none")
+
+    return ValueCommandExpression(command, arguments), offset
 
 
 def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (ConditionalCommandExpression, int):
@@ -639,6 +642,10 @@ def __parse_conditional_command_expression_tokens(tokens: list[Token]) -> (Condi
         offset += 1
 
     command, arguments, token_count = __parse_command_tokens(tokens[offset:])
+
+    if command.body not in {"exists", "isfile", "isdir"}:
+        raise ParseError("expected ConditionalCommand but found none")
+
     offset += token_count
 
     return ConditionalCommandExpression(negate, command, arguments), offset

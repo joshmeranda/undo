@@ -610,6 +610,25 @@ class TestParseCommandExpressionTokens(unittest.TestCase):
 
 
 class TestParseConditionalCommandExpressionTokens(unittest.TestCase):
+    def test_parse_basic(self):
+        tokens = [
+            Token(TokenKind.COMMAND, "isfile", 0),
+            Token(TokenKind.OPEN_PARENTHESE, "(", 0),
+            Token(TokenKind.ACCESSOR, "$", 0),
+            Token(TokenKind.IDENT, "A", 0),
+            Token(TokenKind.CLOSE_PARENTHESE, ")", 0),
+        ]
+
+        expected = ConditionalCommandExpression(
+            False,
+            Token(TokenKind.COMMAND, "isfile", 0),
+            [AccessorExpression(Token(TokenKind.IDENT, "A", 0), False)]
+        )
+        actual, offset = parse_conditional_command_tokens(tokens)
+
+        self.assertEqual(expected, actual)
+        self.assertEqual(5, offset)
+
     def test_parse_basic_not(self):
         tokens = [
             Token(TokenKind.NOT, "!", 0),
