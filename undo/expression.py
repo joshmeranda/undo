@@ -50,9 +50,10 @@ class Token:
 
 __IDENT_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9_])*"
 __COMMAND_REGEX = r"dirname|basename|abspath|env|join|exists|isfile|isdir"
-__STRING_LITERAL_REGEX = r"'.*'"
-__STRING_EXPANSION_REGEX = r"\".*\""
+__STRING_LITERAL_REGEX = r"'.*?[^\\]'"
+__STRING_EXPANSION_REGEX = r"\".*?[^\\]\""
 __SYMBOL_REGEX = r"\$|\?|:|&&|\|\||!|\.\.\.|,|\(|\)"
+
 __TOKEN_REGEX = re.compile(rf"\s*({__STRING_EXPANSION_REGEX}|"
                            rf"{__STRING_LITERAL_REGEX}|"
                            rf"{__COMMAND_REGEX}|"
@@ -293,9 +294,21 @@ class StringExpansionExpression(ValueExpression):
                 and self.token == other.token)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", self.token.body))
         expanded = self.token.body
 
+        exprs = set(re.findall(r"\$\(.*\)", expanded))
+        for expr in exprs:
+            try:
+                expression = parse(expr[2:-1:])
+            except ParseError as err:
+                raise EvaluationError(f"error parsing expression expansion: {err}")
+
+            if not isinstance(expression, ValueExpression):
+                raise EvaluationError("expected value expression")
+
+            expanded = expanded.replace(expr, expression.evaluate(env))
+
+        idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", expanded))
         for ident in idents:
             expanded = expanded.replace(ident, env.setdefault(ident[1:], ""))
 

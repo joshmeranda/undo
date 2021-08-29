@@ -128,12 +128,22 @@ class TestTokenize(unittest.TestCase):
 
     def test_tokenize_string_literal_with_quote_escape(self):
         expected = [
-            Token(TokenKind.STRING_LITERAL, "\'", 1)
+            Token(TokenKind.STRING_LITERAL, r"a\'s", 1)
         ]
 
-        actual = tokenize("'\''")
+        actual = tokenize(r"'a\'s'")
 
         self.assertEqual(expected, actual)
+
+    def test_tokenize_multiple_string_literal(self):
+        expected = [
+            Token(TokenKind.STRING_LITERAL, "A", 1),
+            Token(TokenKind.STRING_LITERAL, "B", 5),
+        ]
+
+        actual = tokenize("'A' 'B'")
+
+        self.assertListEqual(expected, actual)
 
     def test_tokenize_string_expansion(self):
         expected = [
@@ -767,7 +777,7 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_single_expansion(self):
+    def test_ident_expansion(self):
         expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$EXPAND_ME please", 0))
 
         expected = "expand me please"
@@ -775,7 +785,7 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_multiple_expansion(self):
+    def test_ident_multiple_expansion(self):
         expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$HELLO $WORLD", 0))
 
         expected = "Hello, world!"
@@ -783,6 +793,14 @@ class TestStringExpansion(unittest.TestCase):
             "HELLO": "Hello,",
             "WORLD": "world!",
         })
+
+        self.assertEqual(expected, actual)
+
+    def test_expression_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$(A ? 'Exists' : 'No Exists')", 0))
+
+        expected = "Exists"
+        actual = expr.evaluate({"A": "Something"})
 
         self.assertEqual(expected, actual)
 
