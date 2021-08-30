@@ -37,29 +37,34 @@ def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> s
     return sep.join(result)
 
 
-def expand(undo: str, env: dict[str, typing.Union[str, list[str]]]) -> str:
+def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tuple[str, str] = ("%", "%")) -> str:
     """Expand a string containing 0 or more UndoExpressions in them using the given environment.
 
     todo: handle too many multi-command expansions
 
     :param undo: the undo pattern to expand.
     :param env: the dictionary containing the  values to use for evaluating undo expressions.
+    :param bounds: the bounds around an expressions.
     :raise ValueError: for any error with bad syntax or format.
     """
     if undo.count("%") % 2 != 0:
         raise ValueError(f"unbalanced '%' in : {undo}")
 
+    expr_regex = rf"{re.escape(bounds[0])}.*?{re.escape(bounds[1])}"
+
     splits = [i
-              for i in re.findall(r"\s+|"       # spaces
-                                  r"%[^%^]*%|"  # expressions
-                                  r"[^%^\s]+", undo)]
+              for i in re.findall(r"(\s+|"               # spaces
+                                  rf"{expr_regex}|"     # expressions
+                                  r"[^\s]+)", undo)]
 
     expanded = list()
 
     for i in splits:
-        if len(i) > 2 and i[0] == i[-1] == "%":
+
+        # todo: ideally we would not re-run the same regex pattern here
+        if re.fullmatch(expr_regex, i):
             try:
-                expr = expression.parse(i.strip("%").strip())
+                expr = expression.parse(i.removeprefix(bounds[0]).removesuffix(bounds[1]).strip())
             except expression.ExpressionError as err:
                 logging.error(err)
                 continue

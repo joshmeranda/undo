@@ -796,24 +796,24 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_ident_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$EXPAND_ME please", 0))
+    # def test_ident_expansion(self):
+    #     expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$EXPAND_ME please", 0))
+    #
+    #     expected = "expand me please"
+    #     actual = expr.evaluate({"EXPAND_ME": "expand me"})
+    #
+    #     self.assertEqual(expected, actual)
 
-        expected = "expand me please"
-        actual = expr.evaluate({"EXPAND_ME": "expand me"})
-
-        self.assertEqual(expected, actual)
-
-    def test_ident_multiple_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$HELLO $WORLD", 0))
-
-        expected = "Hello, world!"
-        actual = expr.evaluate({
-            "HELLO": "Hello,",
-            "WORLD": "world!",
-        })
-
-        self.assertEqual(expected, actual)
+    # def test_ident_multiple_expansion(self):
+    #     expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$HELLO $WORLD", 0))
+    #
+    #     expected = "Hello, world!"
+    #     actual = expr.evaluate({
+    #         "HELLO": "Hello,",
+    #         "WORLD": "world!",
+    #     })
+    #
+    #     self.assertEqual(expected, actual)
 
     def test_expression_expansion(self):
         expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$(A ? 'Exists' : 'No Exists')", 0))
@@ -823,8 +823,16 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_no_list_expansion(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$($LIST)", 0))
+
+        expected = "a; b; c"
+        actual = expr.evaluate({"LIST": ["a", "b", "c"]})
+
+        self.assertEqual(expected, actual)
+
     def test_empty_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is $EMPTY", 0))
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is $($EMPTY)", 0))
 
         expected = "This expansion is "
         actual = expr.evaluate(dict())

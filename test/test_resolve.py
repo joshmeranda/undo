@@ -111,6 +111,20 @@ class TestUndoRegistry(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_at_least_one_arg(self):
+        registry = UndoRegistry(io.StringIO("""supported-shells = ['bash']
+        
+        [[entry]]
+        cmd = 'mv <SRC...> <DST>'
+        undo = 'mv % $DST % % $SRC %'
+        precise = true
+        """))
+
+        expected = [({"SRC": ["SRC_0", "SRC_1"], "DST": "DST"}, "mv % $DST % % $SRC %")]
+        actual = registry.resolve("mv SRC_0 SRC_1 DST", False)
+
+        self.assertListEqual(expected, actual)
+
     def test_no_resolutions(self):
         registry = UndoRegistry(io.StringIO(f"""unsupported-shells = ["bash"]
 
