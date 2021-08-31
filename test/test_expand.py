@@ -22,6 +22,12 @@ class TestExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_no_space_prefix(self):
+        expected = "aA"
+        actual = expand.expand("a% 'A' %", dict())
+
+        self.assertEqual(expected, actual)
+
     def test_middling_expansion(self):
         expected = "rm --verbose --recursive"
         actual = expand.expand("rm % VERBOSE ? '--verbose' % --recursive", {"VERBOSE": str(True)})

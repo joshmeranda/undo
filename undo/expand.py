@@ -37,6 +37,27 @@ def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> s
     return sep.join(result)
 
 
+def __separate(content: str, pattern: str) -> list[str]:
+    expressions = [i for i in re.findall(pattern, content) if i]
+    other = [i for i in re.split(pattern, content) if i]
+
+    if len(expressions) < len(other):
+        expressions += ["" for _ in range(len(other) - len(expressions))]
+    elif len(other) < len(expressions):
+        other += ["" for _ in range(len(expressions) - len(other))]
+
+    if content.startswith(expressions[0]):
+        return [i
+                for pair in zip(expressions, other)
+                for i in pair
+                if i]
+    else:
+        return [i
+                for pair in zip(other, expressions)
+                for i in pair
+                if i]
+
+
 def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tuple[str, str] = ("%", "%")) -> str:
     """Expand a string containing 0 or more UndoExpressions in them using the given environment.
 
@@ -52,10 +73,7 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
 
     expr_regex = rf"{re.escape(bounds[0])}.*?{re.escape(bounds[1])}"
 
-    splits = [i
-              for i in re.findall(r"(\s+|"               # spaces
-                                  rf"{expr_regex}|"     # expressions
-                                  r"[^\s]+)", undo)]
+    splits = __separate(undo, expr_regex)
 
     expanded = list()
 

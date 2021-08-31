@@ -796,25 +796,6 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    # def test_ident_expansion(self):
-    #     expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$EXPAND_ME please", 0))
-    #
-    #     expected = "expand me please"
-    #     actual = expr.evaluate({"EXPAND_ME": "expand me"})
-    #
-    #     self.assertEqual(expected, actual)
-
-    # def test_ident_multiple_expansion(self):
-    #     expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$HELLO $WORLD", 0))
-    #
-    #     expected = "Hello, world!"
-    #     actual = expr.evaluate({
-    #         "HELLO": "Hello,",
-    #         "WORLD": "world!",
-    #     })
-    #
-    #     self.assertEqual(expected, actual)
-
     def test_expression_expansion(self):
         expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$(A ? 'Exists' : 'No Exists')", 0))
 

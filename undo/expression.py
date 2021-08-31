@@ -295,25 +295,6 @@ class StringExpansionExpression(ValueExpression):
                 and self.token == other.token)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        # expanded = self.token.body
-        #
-        # exprs = set(re.findall(r"\$\(.*\)", expanded))
-        # for expr in exprs:
-        #     try:
-        #         expression = parse(expr[2:-1:])
-        #     except ParseError as err:
-        #         raise EvaluationError(f"error parsing expression expansion: {err}")
-        #
-        #     if not isinstance(expression, ValueExpression):
-        #         raise EvaluationError("expected value expression")
-        #
-        #     expanded = expanded.replace(expr, expression.evaluate(env))
-        #
-        # idents = set(re.findall(r"\$[a-zA-Z0-9][a-zA-Z0-9_]*", expanded))
-        # for ident in idents:
-        #     expanded = expanded.replace(ident, env.setdefault(ident[1:], ""))
-        #
-        # return expanded
         return expand.expand(self.token.body, env, (r"$(", r")"))
 
 
