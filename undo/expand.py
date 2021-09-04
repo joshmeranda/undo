@@ -37,25 +37,52 @@ def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> s
     return sep.join(result)
 
 
-def __separate(content: str, pattern: str) -> list[str]:
-    expressions = [i for i in re.findall(pattern, content) if i]
-    other = [i for i in re.split(pattern, content) if i]
+def __find_matching_closing_bound(content: str, head: int, open_bound: str, close_bound: str) -> int:
+    depth = 0
 
-    if len(expressions) < len(other):
-        expressions += ["" for _ in range(len(other) - len(expressions))]
-    elif len(other) < len(expressions):
-        other += ["" for _ in range(len(expressions) - len(other))]
+    while head < len(content):
+        if content[head::].startswith(open_bound) and not (open_bound == close_bound and depth != 0):
+            depth += 1
+            head += len(open_bound)
+        elif content[head::].startswith(close_bound) and content[head - 1] != "\\":
+            depth -= 1
+            head += len(close_bound)
 
-    if content.startswith(expressions[0]):
-        return [i
-                for pair in zip(expressions, other)
-                for i in pair
-                if i]
-    else:
-        return [i
-                for pair in zip(other, expressions)
-                for i in pair
-                if i]
+            if depth == 0:
+                return head
+        else:
+            head += 1
+
+    return head
+
+
+def __separate(content: str, bounds: tuple[str, str]) -> list[str]:
+    open_bound = bounds[0]
+    close_bound = bounds[1]
+
+    result = list()
+
+    last = 0
+    head = 0
+
+    while head < len(content):
+
+        if content[head::].startswith(open_bound) and content[head - 1] != "\\":
+            if head != last:
+                result.append(content[last:head:])
+                last = head
+
+            head = __find_matching_closing_bound(content, head, open_bound, close_bound)
+
+            result.append(content[last:head:])
+            last = head
+        else:
+            head += 1
+
+    if head != last:
+        result.append(content[last:head:])
+
+    return result
 
 
 def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tuple[str, str] = ("%", "%")) -> str:
@@ -73,7 +100,7 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
 
     expr_regex = rf"{re.escape(bounds[0])}.*?{re.escape(bounds[1])}"
 
-    splits = __separate(undo, expr_regex)
+    splits = __separate(undo, bounds)
 
     expanded = list()
 

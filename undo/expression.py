@@ -295,7 +295,7 @@ class StringExpansionExpression(ValueExpression):
                 and self.token == other.token)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        return expand.expand(self.token.body, env, (r"$(", r")"))
+        return expand.expand(self.token.body, env, (r"`", r"`"))
 
 
 class ExistenceExpression(ConditionalExpression):
@@ -355,7 +355,6 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
         return [f(i) for i in arg] if isinstance(arg, list) else f(arg)
 
     def __run(self, args: list[str]) -> str:
-
         if self.command.body == "dirname":
             return self.__wrapper(os.path.dirname, args[0])
         elif self.command.body == "basename":

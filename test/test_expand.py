@@ -3,6 +3,61 @@ import unittest
 from undo import expand
 
 
+separate = expand.__separate
+
+
+class TestSeparation(unittest.TestCase):
+    def test_separation_basic(self):
+        content = "$( 'hello' ) world"
+
+        expected = ["$( 'hello' )", " world"]
+        actual = separate(content, ("$(", ")"))
+
+        self.assertListEqual(expected, actual)
+
+    def test_nested(self):
+        content = "$(\"$(basename('/some/file/path/hello')\") world"
+
+        expected = ["$(\"$(basename('/some/file/path/hello')\")", " world"]
+        actual = separate(content, ("$(", ")"))
+
+        self.assertListEqual(expected, actual)
+
+    def test_multiple_expressions_with_same_open_and_close_bounds(self):
+        content = "% 'hello' % % 'world' %"
+
+        expected = ["% 'hello' %", " ", "% 'world' %"]
+        actual = separate(content, ("%", "%"))
+
+        self.assertListEqual(expected, actual)
+
+    def test_unintended_close_bound(self):
+        content = "$(do_something('hello'))"
+
+        expected = ["$(do_something('hello')", ")"]
+        actual = separate(content, ("$(", ")"))
+
+        self.assertListEqual(expected, actual)
+
+    @unittest.skip("not yet implemented")
+    def test_escaped_open_bound(self):
+        content = "\\$( $(hello world)"
+
+        expected = ["$( ", "%(hello world)"]
+        actual = separate(content, ("$(", ")"))
+
+        self.assertListEqual(expected, actual)
+
+    @unittest.skip("not yet implemented")
+    def test_escaped_close_bound(self):
+        content = "$(hello world \\))"
+
+        expected = ["%(hello world)", ")"]
+        actual = separate(content, ("$(", ")"))
+
+        self.assertListEqual(expected, actual)
+
+
 class TestExpansion(unittest.TestCase):
     def test_no_expansion(self):
         expected = "no expansion"

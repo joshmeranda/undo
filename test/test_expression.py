@@ -797,7 +797,7 @@ class TestStringExpansion(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_expression_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$(A ? 'Exists' : 'No Exists')", 0))
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "`A ? 'Exists' : 'No Exists'`", 0))
 
         expected = "Exists"
         actual = expr.evaluate({"A": "Something"})
@@ -805,7 +805,7 @@ class TestStringExpansion(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_no_list_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "$($LIST)", 0))
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "`$LIST`", 0))
 
         expected = "a; b; c"
         actual = expr.evaluate({"LIST": ["a", "b", "c"]})
@@ -813,7 +813,7 @@ class TestStringExpansion(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_empty_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is $($EMPTY)", 0))
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is `l$EMPTY`", 0))
 
         expected = "This expansion is "
         actual = expr.evaluate(dict())
