@@ -61,7 +61,7 @@ def parse_args():
                         action="store_true", help="show the resolved command(s) but do not run them, this flag will"
                                                   "disable interactivity if specified")
 
-    parser.add_argument("--allow-imprecise",
+    parser.add_argument("-A", "--allow-imprecise",
                         action="store_true", help="show commands which are not precise and may have unexpected or "
                                                   "unwanted effects")
 
@@ -69,7 +69,7 @@ def parse_args():
                         type=str, help="undo the command passed as an argument rather than pulling from history",
                         metavar="CMD")
 
-    parser.add_argument("-A", "--all",
+    parser.add_argument("-a", "--all",
                         action="store_true", help="search all undo files rather than stopping after the first file "
                                                   "with a match")
 

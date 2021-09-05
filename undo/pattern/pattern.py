@@ -125,13 +125,13 @@ def __parse_delim(content: str) -> (str, int):
 
 
 def __parse_args(content: str) -> list[str]:
-    """Parse a list of the short and long argument names with the preceding dashes."""
+    """Parse a list of the short and long argument names with the preceding dashes, empty names are ignored."""
 
     if len(content) == 0:
         return list()
 
     # todo: ignore whitespace?
-    all_args = [arg for arg in content.split(',')]
+    all_args = [arg for arg in content.split(',') if arg]
 
     for arg in all_args:
         if __ARG_REGEX.fullmatch(arg) is None:

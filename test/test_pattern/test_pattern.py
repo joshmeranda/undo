@@ -163,6 +163,14 @@ class TestArgumentPattern(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_argument("<VAL :>")
 
+    def test_ignore_empty_names(self):
+        content = "<,>"
+
+        expected = ArgumentPattern(None, ArgNum(Quantifier.N, 1), list(), True, True, None)
+        actual = parse_argument(content)
+
+        self.assertEqual(expected, actual)
+
 
 class TestCommandPattern(unittest.TestCase):
 
