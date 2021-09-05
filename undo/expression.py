@@ -331,9 +331,9 @@ class ExistenceExpression(ConditionalExpression):
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
         if self.negate:
-            return env.setdefault(self.identifier.body, "") == ""
+            return self.identifier.body not in env
         else:
-            return env.setdefault(self.identifier.body, "") != ""
+            return self.identifier.body in env
 
 
 # command-expressions
