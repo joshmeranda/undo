@@ -295,7 +295,7 @@ class StringExpansionExpression(ValueExpression):
                 and self.token == other.token)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> typing.Union[str, list[str]]:
-        return expand.expand(self.token.body, env, (r"`", r"`"))
+        return expand.expand(self.token.body, env, (r"`", r"`"), None)
 
 
 class ExistenceExpression(ConditionalExpression):

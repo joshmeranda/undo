@@ -93,7 +93,7 @@ def main():
 
     resolved = resolve.resolve(command, include_dirs, namespace.all, namespace.allow_imprecise, shell)
 
-    undos = [expand.expand(undo, env) for (env, undo) in resolved]
+    undos = [expand.expand(undo, env, ("%", "%"), "; ") for (env, undo) in resolved]
 
     if len(undos) == 0:
         print(f"no command was found to undo '{command}'")

@@ -5,17 +5,16 @@ import typing
 from undo import expression
 
 
-def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> str:
+def __join_expanded(expanded: list[typing.Union[str, list[str]]]) -> list[str]:
     """Join the expanded items into a single or multiple commands.
 
     :param expanded: the expanded items to join.
-    :param sep: the separator to use when expanding a list value across multiple commands.
     :return: The string value
     """
     list_values = [(i, val) for i, val in enumerate(expanded) if isinstance(val, list)]
 
     if len(list_values) == 0:
-        return "".join(expanded)
+        return ["".join(expanded)]
 
     initial_len = len(list_values[0][1]) if list_values else None
 
@@ -34,7 +33,7 @@ def __join_expanded(expanded: list[typing.Union[str, list[str]]], sep: str) -> s
 
         result.append("".join(cc))
 
-    return sep.join(result)
+    return result
 
 
 def __find_matching_closing_bound(content: str, head: int, open_bound: str, close_bound: str) -> int:
@@ -85,7 +84,8 @@ def __separate(content: str, bounds: tuple[str, str]) -> list[str]:
     return result
 
 
-def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tuple[str, str] = ("%", "%")) -> str:
+def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tuple[str, str],
+           command_sep: typing.Optional[str]) -> typing.Union[str, list[str]]:
     """Expand a string containing 0 or more UndoExpressions in them using the given environment.
 
     todo: handle too many multi-command expansions
@@ -93,6 +93,9 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
     :param undo: the undo pattern to expand.
     :param env: the dictionary containing the  values to use for evaluating undo expressions.
     :param bounds: the bounds around an expressions.
+    :param command_sep: the join delimiter to use if expansion results in a string.
+    :return: if command_sep is not None or only one command is expanded, then a string of the one or more expanded
+        commands join on command-sep. Otherwise the list of expanded commands.
     :raise ValueError: for any error with bad syntax or format.
     """
     if undo.count("%") % 2 != 0:
@@ -108,11 +111,7 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
 
         # todo: ideally we would not re-run the same regex pattern here
         if re.fullmatch(expr_regex, i):
-            try:
-                expr = expression.parse(i.removeprefix(bounds[0]).removesuffix(bounds[1]).strip())
-            except expression.ExpressionError as err:
-                logging.error(err)
-                continue
+            expr = expression.parse(i.removeprefix(bounds[0]).removesuffix(bounds[1]).strip())
 
             if isinstance(expr, expression.ValueExpression):
                 expanded.append(expr.evaluate(env))
@@ -121,6 +120,12 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
         else:
             expanded.append(i)
 
-    command = __join_expanded(expanded, "; ")
+    command = __join_expanded(expanded)
+
+    if len(command) == 1:
+        return command[0]
+
+    if command_sep is not None:
+        return command_sep.join(command)
 
     return command
