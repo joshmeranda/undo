@@ -4,6 +4,10 @@ import re
 import typing
 
 
+class PatternError(ValueError):
+    """Raise for any error when parsing patterns."""
+
+
 class Quantifier(enum.Enum):
     N = 1
     AT_LEAST_ONE = 2
@@ -40,7 +44,6 @@ class ArgNum:
                 and self.count == other.count)
 
 
-# todo: may need to support argument groups
 @dataclasses.dataclass
 class ArgumentPattern:
     # if var_name is optional, it should be assigned in order from 1 - n in the calling method / class
@@ -59,11 +62,22 @@ class ArgumentPattern:
 
 
 @dataclasses.dataclass
+class ArgumentGroupPattern:
+    is_exclusive: bool
+
+    is_required: bool
+
+    args: list[ArgumentPattern]
+
+
+@dataclasses.dataclass
 class CommandPattern:
     command: str
     sub_commands: list[str]
     arguments: list[ArgumentPattern]
 
+
+__COMMAND_REGEX = re.compile("([a-zA-Z0-9_-]*)")
 
 __IDENTIFIER_REGEX = re.compile("[A-Z]+")
 __QUANTIFIER_REGEX = re.compile(r"\*|\?|\.\.\.|[1-9][0-9]*")
@@ -74,7 +88,7 @@ __SHORT_REGEX = r"-[a-zA-Z0-9]"
 __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
 
 __ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|"
-                         rf"{__LONG_REGEX}|")
+                         rf"{__LONG_REGEX}")
 
 
 def __parse_identifier(content: str) -> (typing.Optional[str], int):
@@ -121,26 +135,24 @@ def __parse_delim(content: str) -> (str, int):
 
     delim = match.group(1)
 
-    return delim if delim else None, match.end() - match.start()
+    return (delim if delim else None,
+            max(match.end() - match.start(), 1))  # if
 
 
-def __parse_args(content: str) -> list[str]:
+def __parse_arg_names(content: str) -> (list[str], int):
     """Parse a list of the short and long argument names with the preceding dashes, empty names are ignored."""
+    names = list()
 
-    if len(content) == 0:
-        return list()
+    for name in content.split():
+        if __ARG_REGEX.fullmatch(name) is None:
+            raise PatternError(f"'{name}' is not a valid argument name")
 
-    # todo: ignore whitespace?
-    all_args = [arg for arg in content.split(',') if arg]
+        names.append(name)
 
-    for arg in all_args:
-        if __ARG_REGEX.fullmatch(arg) is None:
-            raise ValueError(f"'{arg}' is not a valid long or short argument name")
-
-    return all_args
+    return names, len(content)
 
 
-def parse_argument(content: str) -> ArgumentPattern:
+def parse_argument(content: str) -> (ArgumentPattern, int):
     """Attempt to parse an ArgumentPattern from a str.
 
     Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
@@ -163,16 +175,16 @@ def parse_argument(content: str) -> ArgumentPattern:
     :return: the parsed ArgumentPattern if successful.
     """
     if len(content) == 0:
-        raise ValueError("content may not be empty")
+        raise PatternError("content may not be empty")
 
     if content[0] not in "[<" or content[-1] not in "]>":
-        raise ValueError("content must be wrapped in '[]' or '<>'")
+        raise PatternError("content must be wrapped in '[]' or '<>'")
 
     open_brace = content[0]
     close_brace = content[-1]
 
     if open_brace == "<" and close_brace != ">" or open_brace == "[" and close_brace != "]":
-        raise ValueError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
+        raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
 
     is_required = open_brace == "<"
 
@@ -189,42 +201,80 @@ def parse_argument(content: str) -> ArgumentPattern:
     if content[offset] == ":":
         delim, size = __parse_delim(content[offset:])
 
-        # compensate for leading colon
-        if delim is None:
-            size += 1
+        # if no delim is found add 1
+        offset += max(size, 1)
 
-        offset += size
+    args, size = __parse_arg_names(content[offset: -1])
 
-    args = __parse_args(content[offset: -1])
+    # adding +1 to incorporate the closing brace into the offset
+    offset += size + 1
 
     is_positional = len(args) == 0
 
     if is_positional and not is_required:
-        raise ValueError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
+        raise PatternError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
 
     if ident is None and len(args) > 0:
         ident = (max(args, key=lambda l: len(l)).lstrip('-')
                  .upper().replace("-", "_"))
 
-    return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim)
+    return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim), offset
 
 
-def parse_command_pattern(content: str, arg_parser: typing.Callable[[str], ArgumentPattern] = parse_argument) -> CommandPattern:
+def parse_commands(content: str) -> (str, list[str], int):
+    """Parse the command and sub_commands from the given content.
+
+    :param content; the content to parse.
+    :return: the parsed command, and the index of the next meaningful character in the string.
+    """
+
+    cmd_match = re.match(rf"\s*([a-zA-Z0-9_-]*)\s*", content)
+    sub_cmd_match = re.match(r"((?:[a-zA-Z0-9_-]*\s*)*)\s*", content[cmd_match.end()::])
+
+    command = cmd_match.group(1)
+    sub_commands = sub_cmd_match.group(1).split()
+    offset = cmd_match.end() + sub_cmd_match.end()
+
+    return command, sub_commands, offset
+
+
+def parse_command_pattern(content: str) -> CommandPattern:
     """Attempt to parse a CommandPattern from a str.
 
     :param content: the content to parse.
-    :param arg_parser: the method to use when parsing each argument pattern (defaults to pattern.parse_argument)
     :return: the parsed CommandPattern.
-    :raise: ValueError on any error parsing input.
+    :raise: PatternError on any error parsing input.
     """
     if len(content) == 0:
-        raise ValueError("content may not be empty")
+        raise PatternError("content may not be empty")
 
-    argv = content.split()
+    command, sub_commands, offset = parse_commands(content)
 
-    command = argv[0]
+    arguments = list()
+    # groups = list()
 
-    sub_commands = [arg for arg in argv[1:] if arg[0] not in "[<"]
-    arguments = [arg_parser(arg) for arg in argv[len(sub_commands) + 1:]]
+    while offset < len(content):
+        # check for an argument
+        arg_match = re.match(r"\s*([\[<].*?[]>])\s*",
+                             content[offset::])
+
+        if arg_match is not None:
+            arg, size = parse_argument(arg_match.group(1))
+            offset += size
+
+            arguments.append(arg)
+            continue
+
+        # group_match = re.match(r"\s*([({].*?[)}])\s*",
+        #                        content[offset::])
+        #
+        # if group_match is not None:
+        #     group, size = parse_argument_group_pattern(group_match.group(1))
+        #     offset += size
+        #
+        #     groups.append(group)
+        #     continue
+
+        offset += 1
 
     return CommandPattern(command, sub_commands, arguments)

@@ -128,8 +128,8 @@ def __tokenize(content) -> list[Token]:
 
 class ExpressionError(ValueError):
     """Parent error for any error in parsing or evaluating an UndoException"""
-    def __init__(self, message: str):
-        super().__init__(message)
+    # def __init__(self, message: str):
+    #     super().__init__(message)
 
 
 class TokenError(ExpressionError):

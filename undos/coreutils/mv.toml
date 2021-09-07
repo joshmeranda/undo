@@ -11,15 +11,15 @@
 
 [[entry]]
 cmd = '''mv
-    [--backup] [?:-b] [-S,--suffix] [?:-v,--verbose]
-    [?:-f,--force] [?:-i,--interactive]
+    [--backup] [?:-b] [-S --suffix] [?:-v --verbose]
+    [?:-f --force] [?:-i --interactive]
     <SRC...> <DST>'''
 undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
 
 [[entry]]
 cmd = '''mv
-    [--backup] [?:-b] [-S,--suffix] [?:-v,--verbose]
-    <-n,--no-clobber>
+    [--backup] [?:-b] [-S --suffix] [?:-v --verbose]
+    <-n --no-clobber>
     <SRC...> <DST>'''
 undo = 'mv % isdir($DST) ? "`$DST`/$(basename($SRC)`" : $DST % % $SRC %'
 precise = true
