@@ -73,8 +73,12 @@ class ArgumentGroupPattern:
 @dataclasses.dataclass
 class CommandPattern:
     command: str
+
     sub_commands: list[str]
+
     arguments: list[ArgumentPattern]
+
+    groups: list[ArgumentGroupPattern]
 
 
 __COMMAND_REGEX = re.compile("([a-zA-Z0-9_-]*)")
@@ -178,7 +182,7 @@ def parse_argument(content: str) -> (ArgumentPattern, int):
         raise PatternError("content may not be empty")
 
     if content[0] not in "[<" or content[-1] not in "]>":
-        raise PatternError("content must be wrapped in '[]' or '<>'")
+        raise PatternError("argument pattern must be wrapped in '[ ]' or '< >'")
 
     open_brace = content[0]
     close_brace = content[-1]
@@ -221,6 +225,66 @@ def parse_argument(content: str) -> (ArgumentPattern, int):
     return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim), offset
 
 
+def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
+    """Attempt to parse an ArgumentGroup from a str.
+
+    Node: expected to receive the surrounding parentheses.
+
+    Basic grammar:
+
+        EXCLUSIVE := '!'
+
+        GROUP_PATTERN := '(' EXCLUSIVE? ARGUMENT_PATTERN+ ')'
+
+    :param content: the content to parse.
+    :return: The parsed ArgumentGroupPattern and the offset pointing to the next character in content.
+    """
+
+    if len(content) == 0:
+        raise PatternError("content may not be empty")
+
+    if content[0] not in "({" or content[-1] not in ")}":
+        raise PatternError("argument group pattern must be wrapped '( )' or '{ }'")
+
+    open_brace = content[0]
+    close_brace = content[-1]
+
+    if open_brace == "(" and close_brace != ")" or open_brace == "{" and close_brace != "}":
+        raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
+
+    is_required = open_brace == "{"
+
+    offset = 1
+
+    if content[1] == "!":
+        is_exclusive = True
+        offset += 1
+    else:
+        is_exclusive = False
+
+    arguments = list()
+    while offset < len(content) - 1:
+        if content[offset].isspace():
+            offset += 1
+            continue
+
+        arg_match = re.match(r"([\[<].*?[]>])",
+                             content[offset::])
+
+        if arg_match is not None:
+            arg, size = parse_argument(arg_match.group(1))
+            offset += size
+
+            arguments.append(arg)
+            continue
+        else:
+            raise PatternError(f"could not parse arguments in group '{content}'")
+
+    offset += 1
+
+    return ArgumentGroupPattern(is_exclusive, is_required, arguments), offset
+
+
 def parse_commands(content: str) -> (str, list[str], int):
     """Parse the command and sub_commands from the given content.
 
@@ -251,11 +315,15 @@ def parse_command_pattern(content: str) -> CommandPattern:
     command, sub_commands, offset = parse_commands(content)
 
     arguments = list()
-    # groups = list()
+    groups = list()
 
     while offset < len(content):
+        if content[offset].isspace():
+            offset += 1
+            continue
+
         # check for an argument
-        arg_match = re.match(r"\s*([\[<].*?[]>])\s*",
+        arg_match = re.match(r"([\[<].*?[]>])",
                              content[offset::])
 
         if arg_match is not None:
@@ -265,16 +333,16 @@ def parse_command_pattern(content: str) -> CommandPattern:
             arguments.append(arg)
             continue
 
-        # group_match = re.match(r"\s*([({].*?[)}])\s*",
-        #                        content[offset::])
-        #
-        # if group_match is not None:
-        #     group, size = parse_argument_group_pattern(group_match.group(1))
-        #     offset += size
-        #
-        #     groups.append(group)
-        #     continue
+        group_match = re.match(r"([({].*?[)}])",
+                               content[offset::])
+
+        if group_match is not None:
+            group, size = parse_argument_group_pattern(group_match.group(1))
+            offset += size
+
+            groups.append(group)
+            continue
 
         offset += 1
 
-    return CommandPattern(command, sub_commands, arguments)
+    return CommandPattern(command, sub_commands, arguments, groups)

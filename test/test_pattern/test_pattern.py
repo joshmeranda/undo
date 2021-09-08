@@ -1,7 +1,7 @@
 import unittest
 
-from undo.pattern import ArgNum, ArgumentPattern, CommandPattern, PatternError, Quantifier, \
-    parse_argument, parse_commands, parse_command_pattern
+from undo.pattern import ArgNum, ArgumentPattern, ArgumentGroupPattern, CommandPattern, PatternError, Quantifier, \
+    parse_argument, parse_argument_group_pattern, parse_commands, parse_command_pattern
 
 
 class TestArgumentPattern(unittest.TestCase):
@@ -165,6 +165,55 @@ class TestArgumentPattern(unittest.TestCase):
             parse_argument("<VAL :>")
 
 
+class TestArgumentGroupPattern(unittest.TestCase):
+
+    def test_parse_optional(self):
+        content = "([?:--interactive] [?:--no-clobber])"
+
+        expected = ArgumentGroupPattern(False, False, [
+            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
+            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+        ]), 36
+        actual = parse_argument_group_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_required(self):
+        content = "{[?:--interactive] [?:--no-clobber]}"
+
+        expected = ArgumentGroupPattern(False, True, [
+            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
+            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+        ]), 36
+        actual = parse_argument_group_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_exclusive(self):
+        content = "(! [?:--interactive] [?:--no-clobber])"
+
+        expected = ArgumentGroupPattern(True, False, [
+            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
+            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+        ]), 38
+        actual = parse_argument_group_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_bad_argument(self):
+        content = "(a [?:--interactive])"
+
+        with self.assertRaises(PatternError):
+            parse_argument_group_pattern(content)
+
+    def test_bad_braces(self):
+        with self.assertRaises(PatternError):
+            parse_argument_group_pattern("(}")
+
+        with self.assertRaises(PatternError):
+            parse_argument_group_pattern("{)")
+
+
 class TestParseCommands(unittest.TestCase):
     def test_only_command(self):
         expected = "test", list(), 4
@@ -206,7 +255,7 @@ class TestCommandPattern(unittest.TestCase):
     def test_parse_no_arguments(self):
         content = "test"
 
-        expected = CommandPattern("test", list(), list())
+        expected = CommandPattern("test", list(), list(), list())
         actual = parse_command_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -214,7 +263,7 @@ class TestCommandPattern(unittest.TestCase):
     def test_parse_sub_commands(self):
         content = "test one two"
 
-        expected = CommandPattern("test", ["one", "two"], list())
+        expected = CommandPattern("test", ["one", "two"], list(), list())
         actual = parse_command_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -224,7 +273,7 @@ class TestCommandPattern(unittest.TestCase):
 
         expected = CommandPattern("test", list(), [
             ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["--verbose"], False, False, None)
-        ])
+        ], list())
         actual = parse_command_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -234,7 +283,7 @@ class TestCommandPattern(unittest.TestCase):
 
         expected = CommandPattern("test", list(), [
             ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None),
-        ])
+        ], list())
         actual = parse_command_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -245,6 +294,19 @@ class TestCommandPattern(unittest.TestCase):
         expected = CommandPattern("test", list(), [
             ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["-v", "--verbose"], False, False, None),
             ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None),
+        ], list())
+        actual = parse_command_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_argument_group(self):
+        content = "test ([?:--interactive] [?:--no-clobber])"
+
+        expected = CommandPattern("test", list(), list(), [
+            ArgumentGroupPattern(False, False, [
+                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
+                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+            ])
         ])
         actual = parse_command_pattern(content)
 
