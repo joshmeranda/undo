@@ -19,7 +19,7 @@ undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
 [[entry]]
 cmd = '''mv
     [--backup] [?:-b] [-S --suffix] [?:-v --verbose]
-    <-n --no-clobber>
+    <?:-n --no-clobber>
     <SRC...> <DST>'''
-undo = 'mv % isdir($DST) ? "`$DST`/$(basename($SRC)`" : $DST % % $SRC %'
+undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
 precise = true

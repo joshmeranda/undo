@@ -61,6 +61,16 @@ class TestMv(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_rename_no_clobber(self):
+        command = "mv --no-clobber ORIGINAL OUTER"
+
+        expected = ["mv OUTER ORIGINAL"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
     def test_move_single(self):
         command = "mv INNER DIR"
 
@@ -78,6 +88,16 @@ class TestMv(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_move_single_no_clobber(self):
+        command = "mv --no-clobber INNER DIR"
+
+        expected = ["mv DIR/INNER INNER"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
     def test_move_multiple(self):
         command = "mv INNER ANOTHER_INNER DIR"
 
@@ -92,6 +112,16 @@ class TestMv(unittest.TestCase):
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_move_multiple_no_clobber(self):
+        command = "mv --no-clobber INNER ANOTHER_INNER DIR"
+
+        expected = ["mv DIR/INNER INNER; mv DIR/ANOTHER_INNER ANOTHER_INNER"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
 
         self.assertListEqual(expected, actual)
 
