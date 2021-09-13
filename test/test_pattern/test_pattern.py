@@ -170,7 +170,7 @@ class TestArgumentGroupPattern(unittest.TestCase):
     def test_parse_optional(self):
         content = "([?:--interactive] [?:--no-clobber])"
 
-        expected = ArgumentGroupPattern(False, False, [
+        expected = ArgumentGroupPattern(False, [
             ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
             ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
         ]), 36
@@ -179,23 +179,12 @@ class TestArgumentGroupPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse_required(self):
-        content = "{[?:--interactive] [?:--no-clobber]}"
+        content = "(![?:--interactive] [?:--no-clobber])"
 
-        expected = ArgumentGroupPattern(False, True, [
+        expected = ArgumentGroupPattern(True, [
             ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
             ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
-        ]), 36
-        actual = parse_argument_group_pattern(content)
-
-        self.assertEqual(expected, actual)
-
-    def test_parse_exclusive(self):
-        content = "(! [?:--interactive] [?:--no-clobber])"
-
-        expected = ArgumentGroupPattern(True, False, [
-            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
-        ]), 38
+        ]), 37
         actual = parse_argument_group_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -205,13 +194,6 @@ class TestArgumentGroupPattern(unittest.TestCase):
 
         with self.assertRaises(PatternError):
             parse_argument_group_pattern(content)
-
-    def test_bad_braces(self):
-        with self.assertRaises(PatternError):
-            parse_argument_group_pattern("(}")
-
-        with self.assertRaises(PatternError):
-            parse_argument_group_pattern("{)")
 
 
 class TestParseCommands(unittest.TestCase):
@@ -303,7 +285,7 @@ class TestCommandPattern(unittest.TestCase):
         content = "test ([?:--interactive] [?:--no-clobber])"
 
         expected = CommandPattern("test", list(), list(), [
-            ArgumentGroupPattern(False, False, [
+            ArgumentGroupPattern(False, [
                 ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
                 ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
             ])

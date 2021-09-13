@@ -187,9 +187,9 @@ class TestPatternToArgparse(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["--list"])
 
-    def test_arg_group_optional_inclusive(self):
+    def test_arg_group_optional(self):
         pattern = CommandPattern("test", list(), list(), [
-            ArgumentGroupPattern(False, False, [
+            ArgumentGroupPattern(False, [
                 ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
                 ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
             ])
@@ -217,18 +217,15 @@ class TestPatternToArgparse(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_arg_group_required_exclusive(self):
+    def test_arg_group_required(self):
         pattern = CommandPattern("test", list(), list(), [
-            ArgumentGroupPattern(True, True, [
+            ArgumentGroupPattern(True, [
                 ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
                 ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
             ])
         ])
 
         parser = pattern_to_argparse(pattern)
-
-        with self.assertRaises(argparse.ArgumentError):
-            parser.parse_args([])
 
         expected = argparse.Namespace(INTERACTIVE=True, NO_CLOBBER=False)
         actual = parser.parse_args(["--interactive"])
@@ -240,8 +237,39 @@ class TestPatternToArgparse(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+        expected = argparse.Namespace(INTERACTIVE=True, NO_CLOBBER=True)
+        actual = parser.parse_args(["--no-clobber", "--interactive"])
+
+        self.assertEqual(expected, actual)
+
         with self.assertRaises(argparse.ArgumentError):
-            parser.parse_args(["--interactive", "--no-clobber"])
+            parser.parse_args([])
+
+    def test_empty_arg_group_required(self):
+        pattern = CommandPattern("test", list(), list(), [
+            ArgumentGroupPattern(True, [])
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace()
+        actual = parser.parse_args([])
+
+        self.assertEqual(expected, actual)
+
+    def test_empty_list_arg_group_required(self):
+        pattern = CommandPattern("test", list(), list(), [
+            ArgumentGroupPattern(True, [
+                ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False, None)
+            ])
+        ])
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=[])
+        actual = parser.parse_args(["--list"])
+
+        self.assertEqual(expected, actual)
 
 
 if __name__ == "__main__":

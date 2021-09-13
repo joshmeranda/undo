@@ -81,10 +81,10 @@ class __UndoRegistry:
                         undos.append((vars(namespace), undo_pattern))
                         logging.info(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}'")
                     else:
-                        logging.debug(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}' but was not"
+                        logging.debug(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}' but was not "
                                       f"precise enough")
                 except argparse.ArgumentError as err:
-                    logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}'")
+                    logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}: {err}'")
 
         return undos
 

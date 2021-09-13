@@ -63,8 +63,6 @@ class ArgumentPattern:
 
 @dataclasses.dataclass
 class ArgumentGroupPattern:
-    is_exclusive: bool
-
     is_required: bool
 
     args: list[ArgumentPattern]
@@ -243,24 +241,15 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
     if len(content) == 0:
         raise PatternError("content may not be empty")
 
-    if content[0] not in "({" or content[-1] not in ")}":
-        raise PatternError("argument group pattern must be wrapped '( )' or '{ }'")
-
-    open_brace = content[0]
-    close_brace = content[-1]
-
-    if open_brace == "(" and close_brace != ")" or open_brace == "{" and close_brace != "}":
-        raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
-
-    is_required = open_brace == "{"
-
-    offset = 1
+    if content[0] != "(" or content[-1] != ")":
+        raise PatternError("argument group pattern must be wrapped '( )'")
 
     if content[1] == "!":
-        is_exclusive = True
-        offset += 1
+        is_required = True
+        offset = 2
     else:
-        is_exclusive = False
+        is_required = False
+        offset = 1
 
     arguments = list()
     while offset < len(content) - 1:
@@ -282,7 +271,7 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
 
     offset += 1
 
-    return ArgumentGroupPattern(is_exclusive, is_required, arguments), offset
+    return ArgumentGroupPattern(is_required, arguments), offset
 
 
 def parse_commands(content: str) -> (str, list[str], int):
@@ -333,7 +322,7 @@ def parse_command_pattern(content: str) -> CommandPattern:
             arguments.append(arg)
             continue
 
-        group_match = re.match(r"([({].*?[)}])",
+        group_match = re.match(r"(\(.*?\))",
                                content[offset::])
 
         if group_match is not None:
