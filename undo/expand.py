@@ -88,8 +88,6 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
            command_sep: typing.Optional[str]) -> typing.Union[str, list[str]]:
     """Expand a string containing 0 or more UndoExpressions in them using the given environment.
 
-    todo: handle too many multi-command expansions
-
     :param undo: the undo pattern to expand.
     :param env: the dictionary containing the  values to use for evaluating undo expressions.
     :param bounds: the bounds around an expressions.

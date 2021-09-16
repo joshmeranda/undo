@@ -4,7 +4,7 @@ import argparse
 
 
 class _UndoArgumentParser(argparse.ArgumentParser):
-    """Simple child class of ArgumentParser designed to allow for handling argument parsing error."""
+    """ArgumentParser allowing for inclusive required groups, and disable all exit on error functionality."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

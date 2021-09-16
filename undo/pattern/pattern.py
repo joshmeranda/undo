@@ -154,7 +154,7 @@ def __parse_arg_names(content: str) -> (list[str], int):
     return names, len(content)
 
 
-def parse_argument(content: str) -> (ArgumentPattern, int):
+def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
     """Attempt to parse an ArgumentPattern from a str.
 
     Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
@@ -261,7 +261,7 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
                              content[offset::])
 
         if arg_match is not None:
-            arg, size = parse_argument(arg_match.group(1))
+            arg, size = parse_argument_pattern(arg_match.group(1))
             offset += size
 
             arguments.append(arg)
@@ -316,7 +316,7 @@ def parse_command_pattern(content: str) -> CommandPattern:
                              content[offset::])
 
         if arg_match is not None:
-            arg, size = parse_argument(arg_match.group(1))
+            arg, size = parse_argument_pattern(arg_match.group(1))
             offset += size
 
             arguments.append(arg)
@@ -332,6 +332,6 @@ def parse_command_pattern(content: str) -> CommandPattern:
             groups.append(group)
             continue
 
-        offset += 1
+        raise PatternError(f"unexpected value '{content[offset]}'")
 
     return CommandPattern(command, sub_commands, arguments, groups)

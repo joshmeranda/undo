@@ -1,0 +1,88 @@
+# The cp commanad can take 3 forms:
+#   1 ) cp [-T] SOURCE DEST
+#   2 ) cp SOURCE... DIRECTORY
+#   3 ) -t DIRECTORY SOURCE...
+#
+# For each of these forms, the DEST or the DIRECTORY/SOURCE must simply be
+# removed
+
+
+# cp [OPTION]... [-T] SOURCE< DEST
+[[entry]]
+cmd = '''cp
+    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+    [?:--help] [?:--version]
+
+    [?:-f --force] [?:-u --update]
+
+    [?:-T --no-target-directory] <SRC...> <DEST>'''
+undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+
+[[entry]]
+cmd = '''cp
+    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+    [?:--help] [?:--version]
+
+    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
+
+    [?:-T --no-target-directory] <SRC...> <DEST>'''
+undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+precise = true
+
+
+# cp [OPTION]... -t DIRECTORY SOURCE>...
+[[entry]]
+cmd = '''cp
+    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+    [?:--help] [?:--version]
+
+    [?:-f --force] [?:-u --update]
+
+    <-t --target-directory> <SRC...>'''
+undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
+
+[[entry]]
+cmd = '''cp
+    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+    [?:--help] [?:--version]
+
+    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
+    <-t --target-directory> <SRC...>'''
+
+undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
+precise = true
+
+
+# cp [OPTION]... SOURCE... DIRECTORY
+#[[entry]]
+#cmd = '''cp
+#    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+#    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+#    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+#    [?:--help] [?:--version]
+#
+#    [?:-f --force] [?:-u --update]
+#
+#    <SRC...> <DIRECTORY>'''
+#undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
+#
+#[[entry]]
+#cmd = '''cp
+#    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
+#    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
+#    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
+#    [?:--help] [?:--version]
+#
+#    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
+#     <SRC...> <DIRECTORY>'''
+#
+#undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
+#precise = true
