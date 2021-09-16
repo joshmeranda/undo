@@ -4,10 +4,13 @@
 #   3 ) -t DIRECTORY SOURCE...
 #
 # For each of these forms, the DEST or the DIRECTORY/SOURCE must simply be
-# removed
+# removed; howwever, the first two forms can be "safely" merged. The only real
+# difference betweenthe two forms is whether o not DEST is a file or directory
+# which is trivial to check in the command patten.
 
 
-# cp [OPTION]... [-T] SOURCE< DEST
+# cp [OPTION]... [-T] SOURCE DEST
+# cp [OPTION]... SOURCE... DEST
 [[entry]]
 cmd = '''cp
     [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
@@ -59,30 +62,3 @@ cmd = '''cp
 
 undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
 precise = true
-
-
-# cp [OPTION]... SOURCE... DIRECTORY
-#[[entry]]
-#cmd = '''cp
-#    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-#    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-#    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-#    [?:--help] [?:--version]
-#
-#    [?:-f --force] [?:-u --update]
-#
-#    <SRC...> <DIRECTORY>'''
-#undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
-#
-#[[entry]]
-#cmd = '''cp
-#    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-#    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-#    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-#    [?:--help] [?:--version]
-#
-#    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
-#     <SRC...> <DIRECTORY>'''
-#
-#undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
-#precise = true
