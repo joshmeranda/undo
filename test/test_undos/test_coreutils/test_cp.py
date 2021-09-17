@@ -47,7 +47,7 @@ class TestCp(unittest.TestCase):
         self.assertListEqual(expected, actual)
 
     def test_copy_single_precise(self):
-        command = "cp --interactive SRC DST"
+        command = "cp --no-clobber SRC DST"
 
         expected = ["rm DST"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")

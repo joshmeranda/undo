@@ -17,7 +17,7 @@ cmd = '''cp
     [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
     [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    [-f --force] [-u --update]
+    [-f --force] [-u --update] [-i --interactive]
 
     [-T --no-target-directory] <SRC...> <DEST>'''
 undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
@@ -28,7 +28,7 @@ cmd = '''cp
     [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
     [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    (![-i --interactive] [-n --no-clobber] [--remove-destination])
+    (![-n --no-clobber] [--remove-destination])
 
     [-T --no-target-directory] <SRC...> <DEST>'''
 undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
@@ -42,7 +42,7 @@ cmd = '''cp
     [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
     [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    [-f --force] [-u --update]
+    [-f --force] [-u --update] [-i --interactive]
 
     <-t --target-directory=> <SRC...>'''
 undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
@@ -53,7 +53,7 @@ cmd = '''cp
     [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
     [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    (![-i --interactive] [-n --no-clobber] [--remove-destination])
+    (![-n --no-clobber] [--remove-destination])
     <-t --target-directory=> <SRC...>'''
 
 undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
