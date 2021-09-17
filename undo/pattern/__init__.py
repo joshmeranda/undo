@@ -43,7 +43,7 @@ class _UndoArgumentParser(argparse.ArgumentParser):
             if arg.delim is not None:
                 kwargs["nargs"] = None
                 kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
-        elif arg.arg_num.count == 0:
+        elif arg.arg_num.quantifier == Quantifier.FLAG:
             kwargs["action"] = "store_true"
         elif arg.arg_num.count == 1:
             kwargs["nargs"] = None

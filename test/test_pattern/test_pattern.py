@@ -15,6 +15,15 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_prase_flag_no_name(self):
+        content = "[-v --verbose]"
+
+        expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, ), ["-v", "--verbose"], False, False, None), \
+                   len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
     def test_parse_single(self):
         content = "[-d --dir=DIR]"
 
@@ -232,7 +241,18 @@ class TestArgumentGroupPattern(unittest.TestCase):
         content = "([--number[=N]])"
 
         expected = ArgumentGroupPattern(False, [
-            ArgumentPattern("N", ArgNum(Quantifier.N, 1), ["--number"], False, False, None)
+            ArgumentPattern("N", ArgNum(Quantifier.OPTIONAL), ["--number"], False, False, None)
+        ]), len(content)
+        actual = parse_argument_group_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_multiple_with_optional(self):
+        content = "([--number[=N]] [--verbose])"
+
+        expected = ArgumentGroupPattern(False, [
+            ArgumentPattern("N", ArgNum(Quantifier.OPTIONAL), ["--number"], False, False, None),
+            ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG), ["--verbose"], False, False, None),
         ]), len(content)
         actual = parse_argument_group_pattern(content)
 
@@ -297,7 +317,7 @@ class TestCommandPattern(unittest.TestCase):
         content = "test [--verbose]"
 
         expected = CommandPattern("test", list(), [
-            ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, 0), ["--verbose"], False, False, None)
+            ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG), ["--verbose"], False, False, None)
         ], list())
         actual = parse_command_pattern(content)
 

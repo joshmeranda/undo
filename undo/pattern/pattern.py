@@ -112,7 +112,7 @@ __DELIM_REGEX = re.compile(r":(.*)[\]>]")
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# New methods                                                                 #
+# Parsing                                                                     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -180,10 +180,10 @@ def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, 
     return ArgNum(quantifier, n), offset
 
 
-def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int):
+def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int): 
     """Parse the argument's meta var and argument count."""
     if content[0] == "]":
-        return None, ArgNum(Quantifier.N, 1), 0
+        return None, ArgNum(Quantifier.FLAG), 0
 
     offset = 0
 
@@ -301,141 +301,6 @@ def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
     return ArgumentPattern(ident, arg_num, names, is_positional, is_required, delim), offset
 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Old methods                                                                 #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-# def __parse_identifier(content: str) -> (typing.Optional[str], int):
-#     """Attempt to parse an identifier from th given str.
-#
-#     Note: this method may return None as there is no guarantee that an identifier is provided by the user, and the
-#     fallback identifiers have not yet been parsed.
-#     """
-#     match = __IDENTIFIER_REGEX.match(content)
-#
-#     if match is None:
-#         return None, 0
-#     else:
-#         return match.string[: match.end()], match.end()
-#
-#
-# def __parse_arg_num(content: str) -> (ArgNum, int):
-#     """Parse an ArgNum from the given str."""
-#     match = __QUANTIFIER_REGEX.match(content)
-#
-#     if match is None:
-#         return ArgNum(Quantifier.N, 1), 0
-#
-#     quantifier = content[match.start(): match.end()]
-#
-#     if quantifier == '?':
-#         arg_num = ArgNum(Quantifier.N, 0)
-#     elif quantifier == '...':
-#         arg_num = ArgNum(Quantifier.AT_LEAST_ONE)
-#     elif quantifier == "*":
-#         arg_num = ArgNum(Quantifier.ANY)
-#     else:
-#         arg_num = ArgNum(Quantifier.N, int(quantifier))
-#
-#     return arg_num, len(quantifier)
-#
-#
-# def __parse_delim(content: str) -> (str, int):
-#     """Parse a list delimiter from the given str."""
-#     match = __DELIM_REGEX.match(content)
-#
-#     if match is None:
-#         return None, 0
-#
-#     delim = match.group(1)
-#
-#     return (delim if delim else None,
-#             max(match.end() - match.start(), 1))  # if
-#
-#
-# def __parse_arg_names(content: str) -> (list[str], int):
-#     """Parse a list of the short and long argument names with the preceding dashes, empty names are ignored."""
-#     names = list()
-#
-#     for name in content.split():
-#         if __ARG_REGEX.fullmatch(name) is None:
-#             raise PatternError(f"'{name}' is not a valid argument name")
-#
-#         names.append(name)
-#
-#     return names, len(content)
-
-
-# def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
-#     """Attempt to parse an ArgumentPattern from a str.
-# 
-#     Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
-# 
-#     Basic syntax follows this:
-# 
-#         OPEN_BRACE := '<' | '/'
-#         CLOSE_BRACE := '>' | ']'
-# 
-#         IDENTIFIER := [A-Z]+
-# 
-#         QUANTIFIER := '' | '?' | '...' | '*'
-# 
-#         SHORT := '-[a-zA-Z0-9]'
-#         LONG := '--[a-zA-Z][a-zA-Z-]*'
-# 
-#         PATTERN := OPEN_BRACE IDENTIFIER? QUANTIFIER? ':'? (SHORT | LONG)* CLOSE_BRACE
-# 
-#     :param content: teh string content to be parsed.
-#     :return: the parsed ArgumentPattern if successful.
-#     """
-#     if len(content) == 0:
-#         raise PatternError("content may not be empty")
-# 
-#     if content[0] not in "[<" or content[-1] not in "]>":
-#         raise PatternError("argument pattern must be wrapped in '[ ]' or '< >'")
-# 
-#     open_brace = content[0]
-#     close_brace = content[-1]
-# 
-#     if open_brace == "<" and close_brace != ">" or open_brace == "[" and close_brace != "]":
-#         raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
-# 
-#     is_required = open_brace == "<"
-# 
-#     offset = 1
-# 
-#     ident, size = __parse_identifier(content[offset: -1])
-#     offset += size
-# 
-#     arg_num, size = __parse_arg_num(content[offset: -1])
-#     offset += size
-# 
-#     delim = None
-# 
-#     if content[offset] == ":":
-#         delim, size = __parse_delim(content[offset:])
-# 
-#         # if no delim is found add 1
-#         offset += max(size, 1)
-# 
-#     args, size = __parse_arg_names(content[offset: -1])
-# 
-#     # adding +1 to incorporate the closing brace into the offset
-#     offset += size + 1
-# 
-#     is_positional = len(args) == 0
-# 
-#     if is_positional and not is_required:
-#         raise PatternError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
-# 
-#     if ident is None and len(args) > 0:
-#         ident = (max(args, key=lambda l: len(l)).lstrip('-')
-#                  .upper().replace("-", "_"))
-# 
-#     return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim), offset
-
-
 def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
     """Attempt to parse an ArgumentGroup from a str.
 
@@ -470,7 +335,8 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
             offset += 1
             continue
 
-        arg_match = re.match(r"([\[<].*?[]>])",
+        arg_match = re.match(r"([\[<].*[]>])",
+
                              content[offset::])
 
         if arg_match is not None:
