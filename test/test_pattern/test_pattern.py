@@ -219,6 +219,15 @@ class TestArgumentPattern(unittest.TestCase):
         with self.assertRaises(PatternError):
             parse_argument_pattern("[--at-least-one [=AT_LEAST_ONE...]")
 
+    def test_kebab_name(self):
+        content = "[--no-clobber]"
+
+        expected = ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG, ), ["--no-clobber"], False, False, None), \
+                   len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
 
 class TestArgumentGroupPattern(unittest.TestCase):
 

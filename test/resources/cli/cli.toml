@@ -6,11 +6,11 @@ undo = "echo 'command found'"
 precise = true
 
 [[entry]]
-cmd = "test_multiple <ONE?>"
+cmd = "test_multiple <ONE>"
 undo = "echo 'command found (1)'"
 precise = true
 
 [[entry]]
-cmd = "test_multiple <TWO?>"
+cmd = "test_multiple <TWO>"
 undo = "echo 'command found (2)'"
 precise = true

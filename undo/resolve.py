@@ -97,6 +97,10 @@ def __resolve_in_dir(include_dir: str, command: str, search_all: bool, allow_imp
     Please note that this method will not delve into sub directories, and will only search files with the 'undo'
     extension.
 
+    todo: allow for a README.md without syntax errors
+      ignore all non-toml files
+      ignore files with README
+
     :param include_dir: the directory to search.
     :param command: the command to resolve.
     :param search_all: allow for finding multiple undo commands across all commands.

@@ -101,7 +101,7 @@ __QUANTIFIER_REGEX = re.compile(r"\.\.\.|"
                                 r"{([0-9]+)}")
 
 __SHORT_REGEX = r"-[a-zA-Z0-9]"
-__LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9\-]*"
+__LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
 
 __ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|"
                          rf"{__LONG_REGEX}")
