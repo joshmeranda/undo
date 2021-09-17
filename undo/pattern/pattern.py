@@ -390,7 +390,7 @@ def parse_command_pattern(content: str) -> CommandPattern:
             continue
 
         # check for an argument
-        arg_match = re.match(r"([\[<].*?[]>])",
+        arg_match = re.match(r"([\[<].*[]>])",
                              content[offset::])
 
         if arg_match is not None:

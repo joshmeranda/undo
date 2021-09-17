@@ -336,6 +336,16 @@ class TestCommandPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_parse_arg_with_optional_val(self):
+        content = "test [--backup[=CONTROL]]" \
+                  ""
+        expected = CommandPattern("test", list(), [
+            ArgumentPattern("CONTROL", ArgNum(Quantifier.OPTIONAL), ["--backup"], False, False, None)
+        ], list())
+        actual = parse_command_pattern(content)
+
+        self.assertEqual(expected, actual)
+
     def test_parse_positional(self):
         content = "test <SRC>"
 
