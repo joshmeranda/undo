@@ -137,12 +137,16 @@ class TestArgumentPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_comma_delim(self):
-        content = "<-s --src=SRC:,>"
+        content = "<-s --src=:,>"
 
         expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), ["-s", "--src"], False, True, ","), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
+
+    def test_missing_var_description(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--src:,]")
 
     def test_missing_closing_var_brace(self):
         content = "[--number[=NUMBER]"

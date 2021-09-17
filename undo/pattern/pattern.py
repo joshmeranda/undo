@@ -101,7 +101,6 @@ __QUANTIFIER_REGEX = re.compile(r"\.\.\.|"
                                 r"{([0-9]+)}")
 
 __SHORT_REGEX = r"-[a-zA-Z0-9]"
-# __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
 __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9\-]*"
 
 __ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|"
@@ -198,7 +197,8 @@ def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], Arg
         offset += 1
 
     if not is_positional and not has_brace and not has_equal:
-        raise PatternError(f"non-positional arguments must have either '[', '=', or '[=' but found '{content[offset]}'")
+        raise PatternError(f"non-positional arguments with quantifier != 1 must have either '[', '=', or '[=' but found"
+                           f"'{content[offset]}'")
 
     if (match := __IDENTIFIER_REGEX.match(content[offset::])) is not None:
         ident = match.string[:match.end():]
