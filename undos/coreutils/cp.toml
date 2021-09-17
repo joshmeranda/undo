@@ -13,26 +13,24 @@
 # cp [OPTION]... SOURCE... DEST
 [[entry]]
 cmd = '''cp
-    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-    [?:--help] [?:--version]
+    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
+    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
+    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    [?:-f --force] [?:-u --update]
+    [-f --force] [-u --update]
 
-    [?:-T --no-target-directory] <SRC...> <DEST>'''
+    [-T --no-target-directory] <SRC...> <DEST>'''
 undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
 
 [[entry]]
 cmd = '''cp
-    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-    [?:--help] [?:--version]
+    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
+    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
+    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
+    (![-i --interactive] [-n --no-clobber] [--remove-destination])
 
-    [?:-T --no-target-directory] <SRC...> <DEST>'''
+    [-T --no-target-directory] <SRC...> <DEST>'''
 undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
 precise = true
 
@@ -40,25 +38,23 @@ precise = true
 # cp [OPTION]... -t DIRECTORY SOURCE>...
 [[entry]]
 cmd = '''cp
-    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-    [?:--help] [?:--version]
+    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
+    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
+    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    [?:-f --force] [?:-u --update]
+    [-f --force] [-u --update]
 
-    <-t --target-directory> <SRC...>'''
+    <-t --target-directory=> <SRC...>'''
 undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
 
 [[entry]]
 cmd = '''cp
-    [?:-a --archive] [?:--atributes-only] [--backup] [?:-b] [?:--copy-contents] [?:-d] [?:-H] [?:-l --link]
-    [?:-P --no-dereference] [?:-p] [:,:--preserve] [:,:--no-preserve] [?--parents] [?:-R -r --recursive]
-    [--sparse] [?:--strip-trailing-slashes] [?:-v --verbose] [?:-x --one-file-system] [?:-Z] [--context]
-    [?:--help] [?:--version]
+    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
+    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
+    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
 
-    (![?:-i --interactive] [?:-n --no-clobber] [?:--remove-destination])
-    <-t --target-directory> <SRC...>'''
+    (![-i --interactive] [-n --no-clobber] [--remove-destination])
+    <-t --target-directory=> <SRC...>'''
 
 undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
 precise = true
