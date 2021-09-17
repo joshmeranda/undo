@@ -15,10 +15,19 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_prase_flag_no_name(self):
+    def test_parse_flag_no_name(self):
         content = "[-v --verbose]"
 
         expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, ), ["-v", "--verbose"], False, False, None), \
+                   len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_required_flag_no_name(self):
+        content = "<-v --verbose>"
+
+        expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, ), ["-v", "--verbose"], False, True, None), \
                    len(content)
         actual = parse_argument_pattern(content)
 

@@ -180,7 +180,7 @@ def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, 
 
 def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int):
     """Parse the argument's meta var and argument count."""
-    if content[0] == "]":
+    if content[0] in "]>":
         return None, ArgNum(Quantifier.FLAG), 0
 
     offset = 0
