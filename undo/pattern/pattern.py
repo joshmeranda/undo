@@ -3,15 +3,26 @@ import enum
 import re
 import typing
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Errors                                                                      #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 class PatternError(ValueError):
     """Raise for any error when parsing patterns."""
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Objects                                                                     #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
 class Quantifier(enum.Enum):
-    N = 1
-    AT_LEAST_ONE = 2
-    ANY = 3
+    FLAG = enum.auto()
+    OPTIONAL = enum.auto()
+    AT_LEAST_ONE = enum.auto()
+    ANY = enum.auto()
+    N = enum.auto()
 
 
 class ArgNum:
@@ -79,56 +90,137 @@ class CommandPattern:
     groups: list[ArgumentGroupPattern]
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Regex                                                                       #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 __COMMAND_REGEX = re.compile("([a-zA-Z0-9_-]*)")
 
-__IDENTIFIER_REGEX = re.compile("[A-Z]+")
-__QUANTIFIER_REGEX = re.compile(r"\*|\?|\.\.\.|[1-9][0-9]*")
-
-__DELIM_REGEX = re.compile(r":(.*):")
+__IDENTIFIER_REGEX = re.compile("[a-zA-Z_]+")
+__QUANTIFIER_REGEX = re.compile(r"\.\.\.|"
+                                r"\*|"
+                                r"{([0-9]+)}")
 
 __SHORT_REGEX = r"-[a-zA-Z0-9]"
-__LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
+# __LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9]+(-[a-zA-Z0-9][a-zA-Z0-9]+)*"
+__LONG_REGEX = r"--[a-zA-Z0-9][a-zA-Z0-9\-]*"
 
 __ARG_REGEX = re.compile(rf"{__SHORT_REGEX}|"
                          rf"{__LONG_REGEX}")
 
-
-def __parse_identifier(content: str) -> (typing.Optional[str], int):
-    """Attempt to parse an identifier from th given str.
-
-    Note: this method may return None as there is no guarantee that an identifier is provided by the user, and the
-    fallback identifiers have not yet been parsed.
-    """
-    match = __IDENTIFIER_REGEX.match(content)
-
-    if match is None:
-        return None, 0
-    else:
-        return content[match.start(): match.end()], match.end()
+__DELIM_REGEX = re.compile(r":(.*)[\]>]")
 
 
-def __parse_arg_num(content: str) -> (ArgNum, int):
-    """Parse an ArgNum from the given str."""
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# New methods                                                                 #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+def __parse_names(content: str) -> (list[str], int):
+    """Parse the list of argument names leaving the leading '-' in tact."""
+    offset = 0
+
+    names = list()
+
+    while offset < len(content) and content[offset] not in "[=:]>":
+        if content[offset].isspace():
+            offset += 1
+            continue
+
+        m = __ARG_REGEX.match(content[offset::])
+
+        if m is None:
+            break
+
+        names.append(m.string[m.start(): m.end()])
+        offset += m.end()
+
+    return names, offset
+
+
+def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, int):
+    """Parse the quantifier for the argument."""
     match = __QUANTIFIER_REGEX.match(content)
 
+    n = None
+    offset = 0
+
     if match is None:
-        return ArgNum(Quantifier.N, 1), 0
-
-    quantifier = content[match.start(): match.end()]
-
-    if quantifier == '?':
-        arg_num = ArgNum(Quantifier.N, 0)
-    elif quantifier == '...':
-        arg_num = ArgNum(Quantifier.AT_LEAST_ONE)
-    elif quantifier == "*":
-        arg_num = ArgNum(Quantifier.ANY)
+        if is_flag:
+            quantifier = Quantifier.FLAG
+        elif is_optional:
+            quantifier = Quantifier.OPTIONAL
+        else:
+            quantifier = Quantifier.N
+            n = 1
     else:
-        arg_num = ArgNum(Quantifier.N, int(quantifier))
+        body = match.string[:match.end()]
 
-    return arg_num, len(quantifier)
+        if body == "...":
+            quantifier = Quantifier.ANY if is_optional else Quantifier.AT_LEAST_ONE
+            offset = 3
+        elif body == "*":
+            quantifier = Quantifier.ANY
+            offset = 1
+        elif body[0] == "{":
+            quantifier = Quantifier.N
+
+            try:
+                n = int(match.group(1))
+            except ValueError as err:
+                raise PatternError(f"bad quantifier: {err}")
+
+            offset = match.end()
+        else:
+            raise PatternError(f"unknown quantifier found: '{match.string[:match.end()]}")
+
+    if is_optional and (quantifier == Quantifier.N and n != 1):
+        raise PatternError("optional argument values must only have a Quantifier of 1")
+
+    return ArgNum(quantifier, n), offset
 
 
-def __parse_delim(content: str) -> (str, int):
+def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int):
+    """Parse the argument's meta var and argument count."""
+    if content[0] == "]":
+        return None, ArgNum(Quantifier.N, 1), 0
+
+    offset = 0
+
+    has_brace = False
+    has_equal = False
+
+    if content[offset] == "[":
+        has_brace = True
+        offset += 1
+
+    if content[offset] == "=":
+        has_equal = True
+        offset += 1
+
+    if not is_positional and not has_brace and not has_equal:
+        raise PatternError(f"non-positional arguments must have either '[', '=', or '[=' but found '{content[offset]}'")
+
+    if (match := __IDENTIFIER_REGEX.match(content[offset::])) is not None:
+        ident = match.string[:match.end():]
+        offset += match.end()
+    else:
+        ident = None
+
+    arg_num, size = __parse_arg_num(content[offset::],
+                                    (has_equal or is_positional) and has_brace,
+                                    not has_equal and not is_positional)
+    offset += size
+
+    if has_brace and content[offset] != "]":
+        raise PatternError(f"expected ']' but found '{content[offset]}")
+    elif has_brace:
+        offset += 1
+
+    return ident, arg_num, offset
+
+
+def __parse_delim(content: str) -> (typing.Optional[str], int):
     """Parse a list delimiter from the given str."""
     match = __DELIM_REGEX.match(content)
 
@@ -137,43 +229,32 @@ def __parse_delim(content: str) -> (str, int):
 
     delim = match.group(1)
 
-    return (delim if delim else None,
-            max(match.end() - match.start(), 1))  # if
+    offset = len(delim) + 1  # length of delimiter + initial ':'
 
-
-def __parse_arg_names(content: str) -> (list[str], int):
-    """Parse a list of the short and long argument names with the preceding dashes, empty names are ignored."""
-    names = list()
-
-    for name in content.split():
-        if __ARG_REGEX.fullmatch(name) is None:
-            raise PatternError(f"'{name}' is not a valid argument name")
-
-        names.append(name)
-
-    return names, len(content)
+    return delim if delim else None, offset
 
 
 def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
     """Attempt to parse an ArgumentPattern from a str.
 
-    Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
+    Note: expects to receive the surrounding bracket (ie "[-d --dir]" not "-d --dir")
 
-    Basic syntax follows this:
+    Grammar:
+        OPEN_BRACE := '[' | '<'
+        CLOSE_BRACE := ']' | '>'
 
-        OPEN_BRACE := '<' | '/'
-        CLOSE_BRACE := '>' | ']'
-
-        IDENTIFIER := [A-Z]+
-
-        QUANTIFIER := '' | '?' | '...' | '*'
+        IDENTIFIER := [A-Za-z_]+
 
         SHORT := '-[a-zA-Z0-9]'
         LONG := '--[a-zA-Z][a-zA-Z-]*'
 
-        PATTERN := OPEN_BRACE IDENTIFIER? QUANTIFIER? ':'? (SHORT | LONG)* CLOSE_BRACE
+        N := '{' [0-9]+ '}'
 
-    :param content: teh string content to be parsed.
+        DELIM := ':' + .*
+
+        PATTER := OPEN_BRACE (SHORT | LONG)* '['? '='? IDENT? N? ']' DELIM? CLOSE_BRACE
+
+    :param content: the string to parse.
     :return: the parsed ArgumentPattern if successful.
     """
     if len(content) == 0:
@@ -183,44 +264,176 @@ def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
         raise PatternError("argument pattern must be wrapped in '[ ]' or '< >'")
 
     open_brace = content[0]
-    close_brace = content[-1]
-
-    if open_brace == "<" and close_brace != ">" or open_brace == "[" and close_brace != "]":
-        raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
 
     is_required = open_brace == "<"
 
     offset = 1
 
-    ident, size = __parse_identifier(content[offset: -1])
+    names, size = __parse_names(content[offset::])
     offset += size
 
-    arg_num, size = __parse_arg_num(content[offset: -1])
+    is_positional = len(names) == 0
+
+    ident, arg_num, size = __parse_var(content[offset::], is_positional)
     offset += size
 
-    delim = None
+    delim, size = __parse_delim(content[offset::])
+    offset += size
 
-    if content[offset] == ":":
-        delim, size = __parse_delim(content[offset:])
+    try:
+        if (close_brace := content[offset]) in "]>":
+            if open_brace == "<" and close_brace != ">" or open_brace == "[" and close_brace != "]":
+                raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
 
-        # if no delim is found add 1
-        offset += max(size, 1)
-
-    args, size = __parse_arg_names(content[offset: -1])
-
-    # adding +1 to incorporate the closing brace into the offset
-    offset += size + 1
-
-    is_positional = len(args) == 0
+            offset += 1
+        else:
+            raise PatternError(f"expected '{']' if open_brace == '[' else '>'}' but found '{content[offset]}")
+    except IndexError as err:
+        raise PatternError(f"error parsing arguments pattern: {err}")
 
     if is_positional and not is_required:
         raise PatternError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
 
-    if ident is None and len(args) > 0:
-        ident = (max(args, key=lambda l: len(l)).lstrip('-')
+    if ident is None and len(names) > 0:
+        ident = (max(names, key=lambda l: len(l)).lstrip('-')
                  .upper().replace("-", "_"))
 
-    return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim), offset
+    return ArgumentPattern(ident, arg_num, names, is_positional, is_required, delim), offset
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Old methods                                                                 #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+# def __parse_identifier(content: str) -> (typing.Optional[str], int):
+#     """Attempt to parse an identifier from th given str.
+#
+#     Note: this method may return None as there is no guarantee that an identifier is provided by the user, and the
+#     fallback identifiers have not yet been parsed.
+#     """
+#     match = __IDENTIFIER_REGEX.match(content)
+#
+#     if match is None:
+#         return None, 0
+#     else:
+#         return match.string[: match.end()], match.end()
+#
+#
+# def __parse_arg_num(content: str) -> (ArgNum, int):
+#     """Parse an ArgNum from the given str."""
+#     match = __QUANTIFIER_REGEX.match(content)
+#
+#     if match is None:
+#         return ArgNum(Quantifier.N, 1), 0
+#
+#     quantifier = content[match.start(): match.end()]
+#
+#     if quantifier == '?':
+#         arg_num = ArgNum(Quantifier.N, 0)
+#     elif quantifier == '...':
+#         arg_num = ArgNum(Quantifier.AT_LEAST_ONE)
+#     elif quantifier == "*":
+#         arg_num = ArgNum(Quantifier.ANY)
+#     else:
+#         arg_num = ArgNum(Quantifier.N, int(quantifier))
+#
+#     return arg_num, len(quantifier)
+#
+#
+# def __parse_delim(content: str) -> (str, int):
+#     """Parse a list delimiter from the given str."""
+#     match = __DELIM_REGEX.match(content)
+#
+#     if match is None:
+#         return None, 0
+#
+#     delim = match.group(1)
+#
+#     return (delim if delim else None,
+#             max(match.end() - match.start(), 1))  # if
+#
+#
+# def __parse_arg_names(content: str) -> (list[str], int):
+#     """Parse a list of the short and long argument names with the preceding dashes, empty names are ignored."""
+#     names = list()
+#
+#     for name in content.split():
+#         if __ARG_REGEX.fullmatch(name) is None:
+#             raise PatternError(f"'{name}' is not a valid argument name")
+#
+#         names.append(name)
+#
+#     return names, len(content)
+
+
+# def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
+#     """Attempt to parse an ArgumentPattern from a str.
+# 
+#     Note: expects to receive the surrounding bracket (ie "[-d,--dir]" not "-d,--dir")
+# 
+#     Basic syntax follows this:
+# 
+#         OPEN_BRACE := '<' | '/'
+#         CLOSE_BRACE := '>' | ']'
+# 
+#         IDENTIFIER := [A-Z]+
+# 
+#         QUANTIFIER := '' | '?' | '...' | '*'
+# 
+#         SHORT := '-[a-zA-Z0-9]'
+#         LONG := '--[a-zA-Z][a-zA-Z-]*'
+# 
+#         PATTERN := OPEN_BRACE IDENTIFIER? QUANTIFIER? ':'? (SHORT | LONG)* CLOSE_BRACE
+# 
+#     :param content: teh string content to be parsed.
+#     :return: the parsed ArgumentPattern if successful.
+#     """
+#     if len(content) == 0:
+#         raise PatternError("content may not be empty")
+# 
+#     if content[0] not in "[<" or content[-1] not in "]>":
+#         raise PatternError("argument pattern must be wrapped in '[ ]' or '< >'")
+# 
+#     open_brace = content[0]
+#     close_brace = content[-1]
+# 
+#     if open_brace == "<" and close_brace != ">" or open_brace == "[" and close_brace != "]":
+#         raise PatternError(f"mismatching brace types, found '{open_brace}' and '{close_brace}'")
+# 
+#     is_required = open_brace == "<"
+# 
+#     offset = 1
+# 
+#     ident, size = __parse_identifier(content[offset: -1])
+#     offset += size
+# 
+#     arg_num, size = __parse_arg_num(content[offset: -1])
+#     offset += size
+# 
+#     delim = None
+# 
+#     if content[offset] == ":":
+#         delim, size = __parse_delim(content[offset:])
+# 
+#         # if no delim is found add 1
+#         offset += max(size, 1)
+# 
+#     args, size = __parse_arg_names(content[offset: -1])
+# 
+#     # adding +1 to incorporate the closing brace into the offset
+#     offset += size + 1
+# 
+#     is_positional = len(args) == 0
+# 
+#     if is_positional and not is_required:
+#         raise PatternError("a positional argument may not be optional, you may specify either '?' or '*' as quantifiers")
+# 
+#     if ident is None and len(args) > 0:
+#         ident = (max(args, key=lambda l: len(l)).lstrip('-')
+#                  .upper().replace("-", "_"))
+# 
+#     return ArgumentPattern(ident, arg_num, args, is_positional, is_required, delim), offset
 
 
 def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):

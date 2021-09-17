@@ -7,25 +7,27 @@ from undo.pattern import ArgNum, ArgumentPattern, ArgumentGroupPattern, CommandP
 class TestArgumentPattern(unittest.TestCase):
 
     def test_parse_flag(self):
-        content = "[VERBOSE?:--verbose -v]"
+        content = "[-v --verbose [VERBOSE]]"
 
-        expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["--verbose", "-v"], False, False, None), 23
+        expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, ), ["-v", "--verbose"], False, False, None), \
+                   len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_parse_single(self):
-        content = "[DIR:-d --dir]"
+        content = "[-d --dir=DIR]"
 
-        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False, None), 14
+        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_parse_any(self):
-        content = "[FIELDS*:-f --fields]"
+        content = "[-f --fields=FIELDS*]"
 
-        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.ANY), ["-f", "--fields"], False, False, None), 21
+        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.ANY), ["-f", "--fields"], False, False, None), \
+                   len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -33,31 +35,48 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_any(self):
         content = "<SRC*>"
 
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True, None), 6
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_positional_one(self):
+        content = "<SRC>"
+
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_parse_at_least_one(self):
-        content = "[FIELDS...:-f --fields]"
+        content = "[-f --fields=FIELDS...]"
 
-        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.AT_LEAST_ONE), ["-f", "--fields"], False, False, None), 23
+        expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.AT_LEAST_ONE), ["-f", "--fields"], False, False, None), \
+                   len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
+
+    def test_parse_n_args(self):
+        content = "[-2 --two=TWO{2}]"
+
+        expected = ArgumentPattern("TWO", ArgNum(Quantifier.N, 2), ["-2", "--two"], False, False, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_optional_arg(self):
+        content = "[--optional[=OPTIONAL]]"
+
+        expected = ArgumentPattern("OPTIONAL", ArgNum(Quantifier.OPTIONAL), ["--optional"], False, False, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        return self.assertEqual(expected, actual)
 
     def test_missing_var_name(self):
-        content = "[--dir -d]"
+        content = "[-d --dir=]"
 
-        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["--dir", "-d"], False, False, None), 10
-        actual = parse_argument_pattern(content)
-
-        self.assertEqual(expected, actual)
-
-    def test_missing_var_name_with_dashes(self):
-        content = "[?:--do-something]"
-
-        expected = ArgumentPattern("DO_SOMETHING", ArgNum(Quantifier.N, 0), ["--do-something"], False, False, None), 18
+        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -65,7 +84,7 @@ class TestArgumentPattern(unittest.TestCase):
     def test_positional_missing_var_name(self):
         content = "<...>"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.AT_LEAST_ONE), list(), True, True, None), 5
+        expected = ArgumentPattern(None, ArgNum(Quantifier.AT_LEAST_ONE), list(), True, True, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -77,44 +96,50 @@ class TestArgumentPattern(unittest.TestCase):
             parse_argument_pattern(content)
 
     def test_positional_optional_args(self):
-        content = "<?>"
+        content = "<[...]>"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.N, 0), list(), True, True, None), 3
+        expected = ArgumentPattern(None, ArgNum(Quantifier.ANY), list(), True, True, None), len(content)
         actual = parse_argument_pattern(content)
 
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_empty_delim(self):
-        content = "<::>"
+        content = "<--number =NUMBER:>"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.N, 1), list(), True, True, None), 4
+        expected = ArgumentPattern("NUMBER", ArgNum(Quantifier.N, 1), ["--number"], False, True, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_colan_delim(self):
-        content = "<SRC:::>"
+        content = "<--number =NUMBER::>"
 
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, ":"), 8
+        expected = ArgumentPattern("NUMBER", ArgNum(Quantifier.N, 1), ["--number"], False, True, ":"), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_quadruple_colan_delim(self):
-        content = "<SRC::::::>"
+        content = "<--number =NUMBER:::::>"
 
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, "::::"), 11
+        expected = ArgumentPattern("NUMBER", ArgNum(Quantifier.N, 1), ["--number"], False, True, "::::"), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_comma_delim(self):
-        content = "<SRC:,:-s --src>"
+        content = "<-s --src=SRC:,>"
 
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), ["-s", "--src"], False, True, ","), 16
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), ["-s", "--src"], False, True, ","), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
+
+    def test_missing_closing_var_brace(self):
+        content = "[--number[=NUMBER]"
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern(content)
 
     def test_bad_braces(self):
         with self.assertRaises(PatternError):
@@ -132,6 +157,10 @@ class TestArgumentPattern(unittest.TestCase):
         with self.assertRaises(PatternError):
             parse_argument_pattern("I am not wrapped at all")
 
+    def test_missing_var_delimiter(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--number NUMBER]")
+
     def test_bad_argument_name(self):
         with self.assertRaises(PatternError):
             parse_argument_pattern("<->")
@@ -148,52 +177,66 @@ class TestArgumentPattern(unittest.TestCase):
         with self.assertRaises(PatternError):
             parse_argument_pattern("<-a--a>")
 
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[-a Z]")
+
     def test_bad_quantifier_value(self):
         with self.assertRaises(PatternError):
-            parse_argument_pattern("<VAL-:>")
+            parse_argument_pattern("<{}>")
 
         with self.assertRaises(PatternError):
-            parse_argument_pattern("<VAL-:>")
+            parse_argument_pattern("<{}>")
 
         with self.assertRaises(PatternError):
-            parse_argument_pattern("<VAL[:>")
+            parse_argument_pattern("<..>")
+
+    def test_bad_optional_values(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[-n[=N{2}]]")
 
         with self.assertRaises(PatternError):
-            parse_argument_pattern("<VAL--arg:>")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<VAL :>")
+            parse_argument_pattern("[--at-least-one [=AT_LEAST_ONE...]")
 
 
 class TestArgumentGroupPattern(unittest.TestCase):
 
     def test_parse_optional(self):
-        content = "([?:--interactive] [?:--no-clobber])"
+        content = "([--interactive] [--no-clobber])"
 
         expected = ArgumentGroupPattern(False, [
-            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
-        ]), 36
+            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.FLAG), ["--interactive"], False, False, None),
+            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG), ["--no-clobber"], False, False, None),
+        ]), len(content)
         actual = parse_argument_group_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_parse_required(self):
-        content = "(![?:--interactive] [?:--no-clobber])"
+        content = "(![--interactive] [--no-clobber])"
 
         expected = ArgumentGroupPattern(True, [
-            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
-        ]), 37
+            ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.FLAG), ["--interactive"], False, False, None),
+            ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG), ["--no-clobber"], False, False, None),
+        ]), len(content)
         actual = parse_argument_group_pattern(content)
 
         self.assertEqual(expected, actual)
 
     def test_parse_bad_argument(self):
-        content = "(a [?:--interactive])"
+        content = "(a [--interactive])"
 
         with self.assertRaises(PatternError):
             parse_argument_group_pattern(content)
+
+    def test_parse_optional_argument_value(self):
+        content = "([--number[=N]])"
+
+        expected = ArgumentGroupPattern(False, [
+            ArgumentPattern("N", ArgNum(Quantifier.N, 1), ["--number"], False, False, None)
+        ]), len(content)
+        actual = parse_argument_group_pattern(content)
+
+        self.assertEqual(expected, actual)
 
 
 class TestParseCommands(unittest.TestCase):
@@ -251,10 +294,10 @@ class TestCommandPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse_arguments(self):
-        content = "test [?:--verbose]"
+        content = "test [--verbose]"
 
         expected = CommandPattern("test", list(), [
-            ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["--verbose"], False, False, None)
+            ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, 0), ["--verbose"], False, False, None)
         ], list())
         actual = parse_command_pattern(content)
 
@@ -271,10 +314,10 @@ class TestCommandPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse_multiple_arguments(self):
-        content = "test [?:-v --verbose] <SRC>"
+        content = "test [-v --verbose] <SRC>"
 
         expected = CommandPattern("test", list(), [
-            ArgumentPattern("VERBOSE", ArgNum(Quantifier.N, 0), ["-v", "--verbose"], False, False, None),
+            ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG), ["-v", "--verbose"], False, False, None),
             ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None),
         ], list())
         actual = parse_command_pattern(content)
@@ -282,12 +325,12 @@ class TestCommandPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse_argument_group(self):
-        content = "test ([?:--interactive] [?:--no-clobber])"
+        content = "test ([--interactive] [--no-clobber])"
 
         expected = CommandPattern("test", list(), list(), [
             ArgumentGroupPattern(False, [
-                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.FLAG), ["--interactive"], False, False, None),
+                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG), ["--no-clobber"], False, False, None),
             ])
         ])
         actual = parse_command_pattern(content)
@@ -295,7 +338,7 @@ class TestCommandPattern(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse_with_unexpected_character(self):
-        content = "cp {[?:--interactive]}"
+        content = "cp {[--interactive]}"
 
         with self.assertRaises(PatternError):
             parse_command_pattern(content)

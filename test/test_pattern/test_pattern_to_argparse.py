@@ -3,6 +3,8 @@ import unittest
 
 from undo.pattern import CommandPattern, pattern_to_argparse, ArgumentPattern, ArgNum, Quantifier, ArgumentGroupPattern
 
+# todo: implement and test new quantifiers FLAG and OPTIONAL
+
 
 class TestPatternToArgparse(unittest.TestCase):
     def test_basic(self):

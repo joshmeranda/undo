@@ -6,11 +6,11 @@ import os.path
 import re
 import typing
 
+from undo import expand
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Tokenization classes                                                        #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-from undo import expand
 
 
 class TokenKind(enum.Enum):
