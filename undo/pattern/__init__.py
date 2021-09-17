@@ -30,25 +30,25 @@ class _UndoArgumentParser(argparse.ArgumentParser):
 
         kwargs = dict()
 
-        if arg.arg_num.quantifier == Quantifier.ANY:
+        if (quantifier := arg.arg_num.quantifier) == Quantifier.FLAG:
+            kwargs["action"] = "store_true"
+        elif quantifier == Quantifier.OPTIONAL:
+            kwargs["nargs"] = "?"
+        elif quantifier == Quantifier.AT_LEAST_ONE:
+            kwargs["nargs"] = "+"
+
+            if arg.delim is not None:
+                kwargs["nargs"] = None
+                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
+        elif quantifier == Quantifier.ANY:
             kwargs["nargs"] = "*"
 
             if arg.delim is not None and arg.delim != " ":
                 kwargs["nargs"] = "?"
                 kwargs["const"] = []
                 kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
-        elif arg.arg_num.quantifier == Quantifier.AT_LEAST_ONE:
-            kwargs["nargs"] = "+"
-
-            if arg.delim is not None:
-                kwargs["nargs"] = None
-                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
-        elif arg.arg_num.quantifier == Quantifier.FLAG:
-            kwargs["action"] = "store_true"
-        elif arg.arg_num.count == 1:
-            kwargs["nargs"] = None
-        elif arg.arg_num.count > 1:
-            kwargs["nargs"] = arg.arg_num.count
+        elif (count := arg.arg_num.count) > 1:
+            kwargs["nargs"] = count
 
         if not arg.is_positional:
             kwargs["required"] = arg.is_required

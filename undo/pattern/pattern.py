@@ -60,7 +60,6 @@ class ArgumentPattern:
     # if var_name is optional, it should be assigned in order from 1 - n in the calling method / class
     var_name: typing.Optional[str]
 
-    # todo: rare cases have more than one long and or short argument name
     arg_num: typing.Union[ArgNum, int]
 
     args: list[str]
@@ -180,7 +179,7 @@ def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, 
     return ArgNum(quantifier, n), offset
 
 
-def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int): 
+def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int):
     """Parse the argument's meta var and argument count."""
     if content[0] == "]":
         return None, ArgNum(Quantifier.FLAG), 0

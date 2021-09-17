@@ -3,8 +3,6 @@ import unittest
 
 from undo.pattern import CommandPattern, pattern_to_argparse, ArgumentPattern, ArgNum, Quantifier, ArgumentGroupPattern
 
-# todo: implement and test new quantifiers FLAG and OPTIONAL
-
 
 class TestPatternToArgparse(unittest.TestCase):
     def test_basic(self):
@@ -69,7 +67,7 @@ class TestPatternToArgparse(unittest.TestCase):
 
     def test_flag_arg(self):
         command_pattern = CommandPattern("test", list(), [
-            ArgumentPattern("verbose", ArgNum(Quantifier.N, 0), ["--verbose"], False, False, None)
+            ArgumentPattern("verbose", ArgNum(Quantifier.FLAG), ["--verbose"], False, False, None)
         ], list())
         parser = pattern_to_argparse(command_pattern)
 
@@ -192,8 +190,8 @@ class TestPatternToArgparse(unittest.TestCase):
     def test_arg_group_optional(self):
         pattern = CommandPattern("test", list(), list(), [
             ArgumentGroupPattern(False, [
-                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.FLAG), ["--interactive"], False, False, None),
+                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG), ["--no-clobber"], False, False, None),
             ])
         ])
 
@@ -222,8 +220,8 @@ class TestPatternToArgparse(unittest.TestCase):
     def test_arg_group_required(self):
         pattern = CommandPattern("test", list(), list(), [
             ArgumentGroupPattern(True, [
-                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.N, 0), ["--interactive"], False, False, None),
-                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.N, 0), ["--no-clobber"], False, False, None),
+                ArgumentPattern("INTERACTIVE", ArgNum(Quantifier.FLAG), ["--interactive"], False, False, None),
+                ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG), ["--no-clobber"], False, False, None),
             ])
         ])
 
@@ -270,6 +268,23 @@ class TestPatternToArgparse(unittest.TestCase):
 
         expected = argparse.Namespace(LIST=[])
         actual = parser.parse_args(["--list"])
+
+        self.assertEqual(expected, actual)
+
+    def test_optional_argument(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("NUMBER", ArgNum(Quantifier.OPTIONAL), ["--number"], False, False, None)
+        ], list())
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(NUMBER=None)
+        actual = parser.parse_args(["--number"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(NUMBER="10")
+        actual = parser.parse_args(["--number", "10"])
 
         self.assertEqual(expected, actual)
 
