@@ -59,7 +59,7 @@ class TestUndoRegistry(unittest.TestCase):
         registry = UndoRegistry(io.StringIO(f"""unsupported-shells = ["bash"]
         
         [[entry]]
-        cmd = "test [?:--all]"
+        cmd = "test [--all]"
         undo = "untest --all"
         precise = true
         
@@ -70,7 +70,7 @@ class TestUndoRegistry(unittest.TestCase):
         
         [[entry]]
         cmd = "test <--some>"
-        undo = "wrorng-some-required"
+        undo = "wrong-some-required"
         precise = true
         
         [[entry]]
@@ -89,7 +89,7 @@ class TestUndoRegistry(unittest.TestCase):
         registry = UndoRegistry(io.StringIO(f"""unsupported-shells = ["bash"]
         
         [[entry]]
-        cmd = "test [?:--all]"
+        cmd = "test [--all]"
         undo = "untest --all"
         precise = true
         
@@ -99,7 +99,7 @@ class TestUndoRegistry(unittest.TestCase):
         precise = true
         
         [[entry]]
-        cmd = "test [?:--some]"
+        cmd = "test [--some]"
         undo = "untest --some"
         precise = true
         """))
@@ -129,7 +129,7 @@ class TestUndoRegistry(unittest.TestCase):
         registry = UndoRegistry(io.StringIO(f"""unsupported-shells = ["bash"]
 
         [[entry]]
-        cmd = "test <?:--all>"
+        cmd = "test <--all>"
         undo = "untest --all"
         precise = true
 
@@ -139,7 +139,7 @@ class TestUndoRegistry(unittest.TestCase):
         precise = true
 
         [[entry]]
-        cmd = "test <?:--some>"
+        cmd = "test <--some>"
         undo = "untest --some"
         precise = true
         """))
