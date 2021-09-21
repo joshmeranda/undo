@@ -1,12 +1,12 @@
 # The cp commanad can take 3 forms:
-#   1 ) cp [-T] SOURCE DEST
-#   2 ) cp SOURCE... DIRECTORY
-#   3 ) -t DIRECTORY SOURCE...
+#   1 ) cp [OPTION]... [-T] SOURCE DEST
+#   2 ) cp [OPTION]... SOURCE... DIRECTORY
+#   3 ) cp [OPTION]... -t DIRECTORY SOURCE...
 #
-# For each of these forms, the DEST or the DIRECTORY/SOURCE must simply be
-# removed; howwever, the first two forms can be "safely" merged. The only real
-# difference betweenthe two forms is whether o not DEST is a file or directory
-# which is trivial to check in the command patten.
+# For each of these forms, the DEST or the DIRECTORY/basename(SOURCE) must
+# simply be removed; howwever, the first two forms can be "safely" merged. The
+# only real difference betweenthe two forms is whether o not DEST is a file or
+# directory which is trivial to check in the command patten.
 
 
 # cp [OPTION]... [-T] SOURCE DEST

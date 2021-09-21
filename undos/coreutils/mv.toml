@@ -1,8 +1,11 @@
-# The mv command can take generally 2 forms:
-#   1 ) change the path of a file (renaming and moving to another directory)
-#   2 ) moving multiple files into another directory
+# The mv command can take generally 3 forms:
+#   1 ) mv [OPTION]... [-T] SOURCE DEST
+#   2 ) mv [OPTION]... SOURCE... DIRECTORY
+#   3 ) mv [OPTION]... -t DIRECTORY SOURCE...
 #
-# Fortunately, both of these cases can be easily handled with a single undo
+# todo: update this to incorporate -T and -t
+#
+# Fortunately, all of these cases can be easily handled with a single undo
 # expression, by checking if the DEST of the target command is a directory or
 # not.
 #

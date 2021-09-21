@@ -12,7 +12,8 @@ class RegistrySpecError(ValueError):
     """An error with an undo file specification."""
 
 
-# todo: add support for common and/or ignorable arguments for all entries (saves a lot of copy and pasting
+# todo: add support for common and/or ignorable arguments for all entries (saves a lot of copy and pasting)
+# todo: maybe add caching? might not make much sense for a command line tool
 class __UndoRegistry:
     __SHELLS = "supported-shells"
 

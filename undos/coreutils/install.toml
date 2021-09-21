@@ -1,0 +1,48 @@
+# The install command can generally take 4 forms:
+#   1 ) install [OPTION]... [-T] SOURCE DEST
+#   2 ) install [OPTION]... SOURCE... DIRECTORY
+#   3 ) install [OPTION]... -t DIRECTORY SOURCE...
+#   4 ) install [OPTION]... -d DIRECTORY...
+#
+# For each of these forms, the DEST or the DIRECTORY/basename(SOURCE) must simply be
+# removed; howwever, the first two forms can be "safely" merged. The only real
+# difference betweenthe two forms is whether or not DEST is a file or directory
+# which is trivial to check in the command patten.
+#
+# Unfortunatly since there is no argument like '--no-clobber' to prevent
+# overwritting existing files, there can be no precise undos for the install
+# command.
+
+# install [OPTION]... [-T] SOURCE DEST
+# install [OPTION]... SOURCE... DIRECTORY
+[[entry]]
+cmd = '''install
+         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
+         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
+
+         [-C --compare]
+
+         [-T --no-target-directory] <SRC...> <DEST>'''
+undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+
+
+# install [OPTION]... -t DIRECTORY SOURCE...
+[[entry]]
+cmd = '''install
+         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
+         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
+
+         [-C --compare]
+
+         <-t --target-directory=DIRECTORY> <SRC...>'''
+undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
+
+
+# install [OPTION]... -d DIRECTORY...
+[[entry]]
+cmd = '''install
+         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
+         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
+
+         <-d --directory=...>'''
+undo = 'rm --recursive % $DIRECTORY... %'
