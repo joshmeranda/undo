@@ -4,7 +4,7 @@ from test.test_undos.test_coreutils import common
 from undo import expand, resolve
 
 
-class TestMkfifo(unittest.TestCase):
+class TestMknod(unittest.TestCase):
     def test_no_major_minor(self):
         command = "mknod NAME p"
 

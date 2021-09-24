@@ -53,6 +53,60 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_copy_single_with_no_target_directory(self):
+        command = "cp -T SRC DST"
+
+        expected = []
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+        expected = ["rm DST"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_copy_single__with_no_target_directory_precise(self):
+        command = "cp -T --no-clobber SRC DST"
+
+        expected = ["rm DST"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_copy_single_into_dir(self):
+        command = "cp A DIR"
+
+        expected = []
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+        expected = ["rm DIR/A"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_copy_single_into_dir_precise(self):
+        command = "cp --no-clobber A DIR"
+
+        expected = ["rm DIR/A"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
     def test_copy_many_into_dir(self):
         command = "cp A B C DIR"
 
@@ -80,7 +134,34 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_into_target_dir(self):
+    def test_copy_single_into_target_dir(self):
+        command = "cp --target-directory DIR A"
+
+        expected = []
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+        expected = ["rm DIR/A"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_copy_single_into_target_dir_precise(self):
+        command = "cp --no-clobber --target-directory DIR A"
+
+        expected = ["rm DIR/A"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_copy_many_into_target_dir(self):
         command = "cp --target-directory DIR A B C"
 
         expected = []
@@ -97,7 +178,7 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_into_target_dir_precise(self):
+    def test_copy_many_into_target_dir_precise(self):
         command = "cp --no-clobber --target-directory DIR A B C"
 
         expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]

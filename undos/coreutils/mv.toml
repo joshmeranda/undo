@@ -3,8 +3,6 @@
 #   2 ) mv [OPTION]... SOURCE... DIRECTORY
 #   3 ) mv [OPTION]... -t DIRECTORY SOURCE...
 #
-# todo: update this to incorporate -T and -t
-#
 # Fortunately, all of these cases can be easily handled with a single undo
 # expression, by checking if the DEST of the target command is a directory or
 # not.
@@ -14,21 +12,45 @@
 #
 # Documentation: https://www.gnu.org/software/coreutils/mv
 
+
+# mv [OPTION]... [-T] SOURCE DEST
+# mv [OPTION]... SOURCE... DIRECTORY
 [[entry]]
 cmd = '''mv
-    [--backup=CONTROL] [-b] [-S --suffix=] [-v --verbose]
+         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
 
-    [-f --force] [-i --interactive]
+         [-f --force] [-i --interactive] [-u --update]
 
-    <SRC...> <DST>'''
+         [-T --no-target-directory] <SRC...> <DST>'''
 undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
 
 [[entry]]
 cmd = '''mv
-    [--backup=CONTROL] [-b] [-S --suffix=] [-v --verbose]
+         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
 
-    <-n --no-clobber>
+         <-n --no-clobber>
 
-    <SRC...> <DST>'''
+         <SRC...> <DST>'''
 undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
+precise = true
+
+
+# mv [OPTION]... -t DIRECTORY SOURCE...
+[[entry]]
+cmd = '''mv
+         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
+
+         [-f --force] [-i --interactive] [-u --update]
+
+         <-t --target-directory=> <SRC...>'''
+undo = 'mv % "`$TARGET_DIRECTORY`/`basename($SRC)`" % % $SRC %'
+
+[[entry]]
+cmd = '''mv
+         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
+
+         <-n --no-clobber>
+
+         <-t --target-directory=> <SRC...>'''
+undo = 'mv % "`$TARGET_DIRECTORY`/`basename($SRC)`" % % $SRC %'
 precise = true

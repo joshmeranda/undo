@@ -5,7 +5,7 @@ from undo import expand, resolve
 
 
 class TestMkfifo(unittest.TestCase):
-    def test_mkdir_single(self):
+    def test_mkfifo_single(self):
         command = "mkfifo A"
 
         expected = ["rm A"]
@@ -15,7 +15,7 @@ class TestMkfifo(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_mkdir_multiple(self):
+    def test_mkfifo_multiple(self):
         command = "mkfifo A B C"
 
         expected = ["rm A B C"]

@@ -5,7 +5,7 @@ from undo import expand, resolve
 
 
 class TestLink(unittest.TestCase):
-    def test_something(self):
+    def test_link(self):
         command = "link FILE1 FILE2"
 
         expected = ["rm FILE2"]
