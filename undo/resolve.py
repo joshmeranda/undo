@@ -75,6 +75,7 @@ class __UndoRegistry:
 
             parser = pattern.pattern_to_argparse(cmd_pattern)
 
+            # todo: consider logging non-matching command?
             if parser.prog == cmd:
                 try:
                     namespace = parser.parse_args(argv)
@@ -86,7 +87,7 @@ class __UndoRegistry:
                         logging.debug(f"command '{command}' matched pattern '{entry[self.__ENTRY_CMD]}' but was not "
                                       f"precise enough")
                 except argparse.ArgumentError as err:
-                    logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}: {err}'")
+                    logging.debug(f"command '{command}' does not match '{entry[self.__ENTRY_CMD]}': {err}'")
 
         return undos
 

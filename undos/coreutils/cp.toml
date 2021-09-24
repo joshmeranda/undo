@@ -5,8 +5,10 @@
 #
 # For each of these forms, the DEST or the DIRECTORY/basename(SOURCE) must
 # simply be removed; howwever, the first two forms can be "safely" merged. The
-# only real difference betweenthe two forms is whether o not DEST is a file or
+# only real difference between the two forms is whether o not DEST is a file or
 # directory which is trivial to check in the command patten.
+#
+# Documentation: https://www.gnu.org/software/coreutils/cp
 
 
 # cp [OPTION]... [-T] SOURCE DEST

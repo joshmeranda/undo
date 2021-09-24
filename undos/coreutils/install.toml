@@ -9,9 +9,14 @@
 # difference betweenthe two forms is whether or not DEST is a file or directory
 # which is trivial to check in the command patten.
 #
+# The last form, is unique in that it only creates directories, which can
+# simply be removed.
+#
 # Unfortunatly since there is no argument like '--no-clobber' to prevent
 # overwritting existing files, there can be no precise undos for the install
 # command.
+#
+# Documentation: https://www.gnu.org/software/coreutils/install
 
 # install [OPTION]... [-T] SOURCE DEST
 # install [OPTION]... SOURCE... DIRECTORY

@@ -1,3 +1,9 @@
+# The link command is very simple with one one form 'link FILE1 FILE2'. It can
+# be undone by removing FILE2.
+#
+# Documentation: https://www.gnu.org/software/coreutils/link
+
+
 [[entry]]
 cmd = 'link FILE1 FILE2'
 undo = 'rm FILE2'

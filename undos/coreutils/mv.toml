@@ -11,6 +11,8 @@
 #
 # If DEST is a directory, undo simply needs to move each of the SRC files back
 # to their original path, and if DEST is a file you can do the same.
+#
+# Documentation: https://www.gnu.org/software/coreutils/mv
 
 [[entry]]
 cmd = '''mv

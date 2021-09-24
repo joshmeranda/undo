@@ -1,0 +1,79 @@
+# The ln comand can take one of 4 forms:
+#   1 ) ln [OPTION]... [-T] TARGET LINK_NAME
+#   2 ) ln [OPTION]... TARGET
+#   3 ) ln [OPTION]... TARGET... DIRECTORY
+#   4 ) ln [OPTION]... -t DIRECTORY TARGET...
+#
+# For each of these forms, the TARGET or the TARGET/basename(SOURCE) must
+# simply be removed. The easiest of these patterns is the second, with only
+# one interesting value, which just points to a link to be removed.
+#
+# The first and thrid forms can be "safely" merfed. The only real difference
+# between the two forms is whether or not the TARGET is a file or a directory,
+# which is trivial to check in the command pattern.
+#
+# Documentation: https://www.gnu.org/software/coreutils/ln
+
+
+# ln [OPTION]... [-T] TARGET LINK_NAME
+# ln [OPTION]... TARGET... DIRECTORY
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         (![-f --force] [--interactive])
+
+         [-T --no-target-directory] <TARGET...> <DEST>'''
+undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST %'
+
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         [-T --no-target-directory] <TARGET...> <DEST>'''
+undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST %'
+precise = true
+
+
+# ln [OPTION]... TARGET
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         (![-f --force] [--interactive])
+
+         <TARGET>'''
+undo = 'rm % basename($TARGET) %'
+
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         <TARGET>'''
+undo = 'rm % basename($TARGET) %'
+precise = true
+
+
+# ln [OPTION]... -t DIRECTORY TARGET...
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         (![-f --force] [--interactive])
+
+         <-t --target-directory=DIRECTORY> <TARGET...>'''
+undo = 'rm % "`$DIRECTORY`/`basename($TARGET)`" %'
+
+[[entry]]
+cmd = '''ln
+         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
+
+         <-t --target-directory=DIRECTORY> <TARGET...>'''
+undo = 'rm % "`$DIRECTORY`/`basename($TARGET)`" %'
+precise = true
