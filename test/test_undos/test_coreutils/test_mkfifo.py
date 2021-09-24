@@ -4,9 +4,9 @@ from test.test_undos.test_coreutils import common
 from undo import expand, resolve
 
 
-class TestMkdir(unittest.TestCase):
+class TestMkfifo(unittest.TestCase):
     def test_mkdir_single(self):
-        command = "mkdir A"
+        command = "mkfifo A"
 
         expected = ["rm A"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -16,7 +16,7 @@ class TestMkdir(unittest.TestCase):
         self.assertListEqual(expected, actual)
 
     def test_mkdir_multiple(self):
-        command = "mkdir A B C"
+        command = "mkfifo A B C"
 
         expected = ["rm A B C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")

@@ -1,0 +1,12 @@
+# The mkfifo command is very with one form 'mkdir [OPTION]... NAME...`. It
+# can be undone by removing the created directories.
+#
+# Documentation: https://www.gnu.org/software/coreutils/mkfifo
+
+[[entry]]
+cmd = '''mkfifo
+         [-m --mode=MODE] [-Z] [--context=CTX]
+
+         <NAME...>'''
+undo = 'rm % $NAME... %'
+precise = true

@@ -1,11 +1,10 @@
 # The mkidir command is very with one form 'mkdir [OPTION]... DIRECTORY...`. It
 # can be undone by removing the created directories.
 #
-# Documentation: https://www.gnu.org/software/coreutils/rmdir
+# Documentation: https://www.gnu.org/software/coreutils/mkdir
 
 [[entry]]
 cmd = '''mkdir
-
          [-m --mode=MODE] [-p --parents] [-Z] [--context=CTX]
 
          <DIRECTORY...>'''
