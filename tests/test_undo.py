@@ -15,7 +15,7 @@ class TestUndo(unittest.TestCase):
         os.environ["UNDO_INCLUDE_DIRS"] = TestUndo.CLI_RESOURCE_PATH
 
     def setUp(self):
-        self.skipTest("test fail outside of pycharm")
+        self.skipTest("tests fail outside of pycharm")
 
     def test_no_match(self):
         proc = subprocess.run(["python", TestUndo.ENTRYPOINT_PATH, "--command", "no_match"], capture_output=True)

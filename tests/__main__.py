@@ -1,6 +1,4 @@
-import unittest
-
-from test.test_undos import *
+from tests import *
 
 
 if __name__ == "__main__":

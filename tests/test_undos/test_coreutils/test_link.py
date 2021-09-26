@@ -1,6 +1,6 @@
 import unittest
 
-from test.test_undos.test_coreutils import common
+from tests.test_undos.test_coreutils import common
 from undo import expand, resolve
 
 

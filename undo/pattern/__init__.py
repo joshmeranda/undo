@@ -102,7 +102,7 @@ def pattern_to_argparse(command_pattern: CommandPattern) -> argparse.ArgumentPar
     is needed.
 
     todo: test if setting "help" arguments to "''" rather than None is faster
-    todo: will need to handle and test for repeated arguments
+    todo: will need to handle and tests for repeated arguments
 
     :param command_pattern: the source CommandPattern to build the ArgumentParser from.
     :return: The built ArgumentParser.

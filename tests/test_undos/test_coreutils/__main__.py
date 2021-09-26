@@ -1,6 +1,6 @@
 import unittest
 
-from test.test_undos.test_coreutils import *
+from tests.test_undos.test_coreutils import *
 
 
 if __name__ == "__main__":

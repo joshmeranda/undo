@@ -4,10 +4,10 @@ import unittest
 
 from undo import resolve, expand
 
-from test.test_undos.test_coreutils import common
+from tests.test_undos.test_coreutils import common
 
 
-class TestCp(unittest.TestCase):
+class TestInstall(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         if os.path.exists(common.COREUTILS_TEST_ENV_DIR):
@@ -26,8 +26,8 @@ class TestCp(unittest.TestCase):
         cls.addClassCleanup(shutil.rmtree, common.COREUTILS_TEST_ENV_DIR)
         cls.addClassCleanup(os.chdir, cwd_bak)
 
-    def test_copy_single(self):
-        command = "cp SRC DST"
+    def test_install_file(self):
+        command = "install SRC DIR/DST"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -36,25 +36,15 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DST"]
+        expected = ["rm DIR/DST"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_single_precise(self):
-        command = "cp --no-clobber SRC DST"
-
-        expected = ["rm DST"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-    def test_copy_single_with_no_target_directory(self):
-        command = "cp -T SRC DST"
+    def test_install_file_no_target_directory(self):
+        command = "install -T SRC DIR/DST"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -63,25 +53,15 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DST"]
+        expected = ["rm DIR/DST"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_single__with_no_target_directory_precise(self):
-        command = "cp -T --no-clobber SRC DST"
-
-        expected = ["rm DST"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-    def test_copy_single_into_dir(self):
-        command = "cp A DIR"
+    def test_install_single(self):
+        command = "install SRC DIR"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -90,25 +70,15 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A"]
+        expected = ["rm DIR/SRC"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_single_into_dir_precise(self):
-        command = "cp --no-clobber A DIR"
-
-        expected = ["rm DIR/A"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-    def test_copy_many_into_dir(self):
-        command = "cp A B C DIR"
+    def test_install_multiple(self):
+        command = "install A B C DIR"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -124,18 +94,8 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_many_into_dir_precise(self):
-        command = "cp --no-clobber A B C DIR"
-
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-    def test_copy_single_into_target_dir(self):
-        command = "cp --target-directory DIR A"
+    def test_install_single_target_directory(self):
+        command = "install -t DIR SRC"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -144,25 +104,15 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A"]
+        expected = ["rm DIR/SRC"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_single_into_target_dir_precise(self):
-        command = "cp --no-clobber --target-directory DIR A"
-
-        expected = ["rm DIR/A"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-    def test_copy_many_into_target_dir(self):
-        command = "cp --target-directory DIR A B C"
+    def test_install_multiple_target_directory(self):
+        command = "install -t DIR A B C"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -178,13 +128,20 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_copy_many_into_target_dir_precise(self):
-        command = "cp --no-clobber --target-directory DIR A B C"
+    def test_install_directory(self):
+        command = "install -d A B C"
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+        expected = ["rm --recursive A B C"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 

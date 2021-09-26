@@ -2,12 +2,13 @@ import os
 import shutil
 import unittest
 
-from undo import resolve, expand
+import undo.resolve as resolve
+import undo.expand as expand
 
-from test.test_undos.test_coreutils import common
+import tests.test_undos.test_coreutils.common as common
 
 
-class TestInstall(unittest.TestCase):
+class TestMv(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         if os.path.exists(common.COREUTILS_TEST_ENV_DIR):
@@ -15,9 +16,26 @@ class TestInstall(unittest.TestCase):
 
         os.mkdir(common.COREUTILS_TEST_ENV_DIR)
 
+        os.mknod(os.path.join(
+            common.COREUTILS_TEST_ENV_DIR,
+            "OUTER"
+        ))
+
         os.mkdir(os.path.join(
             common.COREUTILS_TEST_ENV_DIR,
             "DIR"
+        ))
+
+        os.mknod(os.path.join(
+            common.COREUTILS_TEST_ENV_DIR,
+            "DIR",
+            "INNER"
+        ))
+
+        os.mknod(os.path.join(
+            common.COREUTILS_TEST_ENV_DIR,
+            "DIR",
+            "ANOTHER_INNER"
         ))
 
         cwd_bak = os.getcwd()
@@ -26,8 +44,8 @@ class TestInstall(unittest.TestCase):
         cls.addClassCleanup(shutil.rmtree, common.COREUTILS_TEST_ENV_DIR)
         cls.addClassCleanup(os.chdir, cwd_bak)
 
-    def test_install_file(self):
-        command = "install SRC DIR/DST"
+    def test_rename(self):
+        command = "mv ORIGINAL OUTER"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -36,15 +54,25 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/DST"]
+        expected = ["mv OUTER ORIGINAL"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_install_file_no_target_directory(self):
-        command = "install -T SRC DIR/DST"
+    def test_rename_precise(self):
+        command = "mv --no-clobber ORIGINAL OUTER"
+
+        expected = ["mv OUTER ORIGINAL"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_move_single(self):
+        command = "mv INNER DIR"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -53,15 +81,25 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/DST"]
+        expected = ["mv DIR/INNER INNER"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_install_single(self):
-        command = "install SRC DIR"
+    def test_move_single_precise(self):
+        command = "mv --no-clobber INNER DIR"
+
+        expected = ["mv DIR/INNER INNER"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_move_multiple(self):
+        command = "mv INNER ANOTHER_INNER DIR"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -70,15 +108,25 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/SRC"]
+        expected = ["mv DIR/INNER INNER; mv DIR/ANOTHER_INNER ANOTHER_INNER"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_install_multiple(self):
-        command = "install A B C DIR"
+    def test_move_multiple_precise(self):
+        command = "mv --no-clobber INNER ANOTHER_INNER DIR"
+
+        expected = ["mv DIR/INNER INNER; mv DIR/ANOTHER_INNER ANOTHER_INNER"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_move_single_with_target_directory(self):
+        command = "mv -t DIR INNER"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -87,15 +135,25 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["mv DIR/INNER INNER"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_install_single_target_directory(self):
-        command = "install -t DIR SRC"
+    def test_move_single_with_target_directory_precise(self):
+        command = "mv --no-clobbe -t DIR INNER"
+
+        expected = ["mv DIR/INNER INNER"]
+        actual = [expand.expand(undo, env, ("%", "%"), "; ")
+                  for env, undo in
+                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
+
+        self.assertListEqual(expected, actual)
+
+    def test_move_multiple_with_target_directory(self):
+        command = "mv -t DIR INNER ANOTHER_INNER"
 
         expected = []
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
@@ -104,47 +162,24 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/SRC"]
+        expected = ["mv DIR/INNER INNER; mv DIR/ANOTHER_INNER ANOTHER_INNER"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
         self.assertListEqual(expected, actual)
 
-    def test_install_multiple_target_directory(self):
-        command = "install -t DIR A B C"
+    def test_move_multiple_with_target_directory_precise(self):
+        command = "mv --no-clobber -t DIR INNER ANOTHER_INNER"
 
-        expected = []
+        expected = ["mv DIR/INNER INNER; mv DIR/ANOTHER_INNER ANOTHER_INNER"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
 
-        self.assertListEqual(expected, actual)
-
-    def test_install_directory(self):
-        command = "install -d A B C"
-
-        expected = []
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-        expected = ["rm --recursive A B C"]
-        actual = [expand.expand(undo, env, ("%", "%"), "; ")
-                  for env, undo in
-                  resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
-
-        self.assertListEqual(expected, actual)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
+
