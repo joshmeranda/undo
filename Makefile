@@ -1,0 +1,56 @@
+RM := rm --verbose --recursive --force
+CP := cp --verbose --recursive
+
+VERSION := $(shell grep version setup.cfg | cut -d = -f 2 | xargs)
+
+DISTRIBUTION_NAME := undo-${VERSION}
+WHEEL := dist/${DISTRIBUTION_NAME}-py3-none-any.whl
+DISTRIBUTION_TAR := ${DISTRIBUTION_NAME}.tar.gz
+
+PY_SOURCES := $(shell find undo -name '*.py')
+
+.PHONY: help
+help:
+	@echo 'USAGE: make TARGET'
+	@echo
+
+	@echo 'TARGETS:'
+	@echo '  dist       create a distribution tar archive of the python wheel and undo'
+	@echo '             files'
+
+	@echo '  clean      clean the working directory of ALL unnecessary files (dist,'
+	@echo '             dist, etc)'
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# distribution targets                                                        #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+dist: ${DISTRIBUTION_TAR}
+
+${DISTRIBUTION_TAR}: ${WHEEL} LICENSE README.md undos Makefile.dist
+	mkdir --verbose ${DISTRIBUTION_NAME}
+
+	${CP} --target-directory ${DISTRIBUTION_NAME} ${WHEEL} LICENSE README.md
+	cp Makefile.dist ${DISTRIBUTION_NAME}/Makefile
+
+	# move undo files into distribution directory with a flattened directory tree
+	mkdir ${DISTRIBUTION_NAME}/undos
+	find undos -name '*toml' -exec ${CP} --target-directory ${DISTRIBUTION_NAME}/undos '{}' +
+
+	# create the tar
+	tar --gzip --verbose --create --file ${DISTRIBUTION_TAR} ${DISTRIBUTION_NAME}
+
+	${RM} ${DISTRIBUTION_NAME}
+
+${WHEEL}: ${PY_SOURCES}
+	python -m build --wheel
+
+${PY_SOURCES}: # do nothing
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# clean targets                                                               #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+clean:
+	find . -name __pychache__ -exec ${RM} '{}' +
+	${RM} build dist undo.egg-info ${DISTRIBUTION_TAR}

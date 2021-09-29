@@ -1,0 +1,22 @@
+.PHONY: help
+help:
+	@echo 'USAGE: make TARGET [VALUES...]'
+	@ehco
+
+	@echo 'TARGETS:'
+	@echo '  install    install the package and data files to the system'
+
+	@echo '  uninstall  uninstall the package from the system and remove'
+	@echo '             installed data files'
+
+	@echo 'VALUES:'
+	@echo '  UNDO_DIR  the directory to install all undo files to (default'
+	@echo '            /usr/shar/undo)'
+
+	@echo '  PIP_ARGS  the arguments to pass to pip when installing the python package'
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# installation targets                                                        #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+.PHONY: install uninstall
