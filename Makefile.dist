@@ -1,7 +1,14 @@
+RM := rm --verbose --recursive
+CP := cp --verbose --recursive
+
+WHEEL := dist/${DISTRIBUTION_NAME}-py3-none-any.whl
+
+UNDO_DIR := /usr/share
+
 .PHONY: help
 help:
 	@echo 'USAGE: make TARGET [VALUES...]'
-	@ehco
+	@echo
 
 	@echo 'TARGETS:'
 	@echo '  install    install the package and data files to the system'
@@ -10,13 +17,26 @@ help:
 	@echo '             installed data files'
 
 	@echo 'VALUES:'
-	@echo '  UNDO_DIR  the directory to install all undo files to (default'
-	@echo '            /usr/shar/undo)'
+	@echo '  UNDO_DIR   the directory to install all undo files to (default'
+	@echo '             /usr/share)'
 
-	@echo '  PIP_ARGS  the arguments to pass to pip when installing the python package'
+	@echo '  PIP_ARGS   the arguments to pass to pip when installing or uninstalling the'
+	@echo '             python package (note that the --yes flag is already passed when'
+	@echo '             uninstalling'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # installation targets                                                        #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 .PHONY: install uninstall
+
+install:
+	pip install ${PIP_ARGS} ${WHEEL}
+
+	test ! -e "${UNDO_DIR}" && mkdir --verbose --parents
+	${CP} --target-directory ${UNDO_DIR} undos
+
+uninstall:
+	pip uninstall ${PIP_ARGS} --yes ${WHEEL}
+
+	${RM} ${UNDO_DIR}

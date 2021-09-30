@@ -1,4 +1,4 @@
-RM := rm --verbose --recursive --force
+RM := rm --verbose --recursive
 CP := cp --verbose --recursive
 
 VERSION := $(shell grep version setup.cfg | cut -d = -f 2 | xargs)
