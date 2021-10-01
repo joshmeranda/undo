@@ -31,3 +31,29 @@ One of the most powerful components of undo are the "undo files" in which you ca
 are the declarative configuration files where the user can specify how to undo certain commands. More undo files can be
 added at any time, and will be used to resolve undo commands as long as the parent directory is specified in the
 `UNDO_INCLUDE_DIRS` environment variable. You can find full documentation of the syntax [here](/undos).
+
+## Known Limitations
+Obviously Undo can only do so much, especially when pulling the target command from history, and may end up in
+situations where it does thing you don't want. Here you will find a list of known limitations that do not have an easy
+solution and will likely always be a plague upon it:
+
+#### Typos
+If the last command contained a typo, Undo will likely have no idea what to do with it unless the typo matched another
+command, which will amost certainly either fail or do something you did not intend for it to do.
+
+#### Failed commands
+Most shell histories do not maintain a record of the exit codes of the executed commands. So it is likely that you may
+be trying to undo a command which failed, causing the undo command to do something you didn't want it to. For example,
+
+```shell
+[undo@localhost ~] ls
+existing-directory a b c
+[undo@localhost ~] mkdir existing-directory
+mkdir: cannot create directory 'existing-directory': File Exists
+[undo@localhost ~] undo
+[undo@localhost ~] ls
+a b c
+```
+
+The `mkdir` command failed because `existing-directory` already existed, but undo went ahead and deleted the directory
+anyway.

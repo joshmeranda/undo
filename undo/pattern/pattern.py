@@ -115,7 +115,10 @@ __DELIM_REGEX = re.compile(r":(.*)[\]>]")
 
 
 def __parse_names(content: str) -> (list[str], int):
-    """Parse the list of argument names leaving the leading '-' in tact."""
+    """Parse the list of argument names leaving the leading '-' in tact.
+
+    todo: test long names with only one dash (ex. find -name)
+    """
     offset = 0
 
     names = list()
@@ -354,6 +357,8 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
 
 def parse_commands(content: str) -> (str, list[str], int):
     """Parse the command and sub_commands from the given content.
+
+    todo: consider supporting command aliases without copy and pasting entire command patterns
 
     :param content; the content to parse.
     :return: the parsed command, and the index of the next meaningful character in the string.
