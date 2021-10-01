@@ -1,10 +1,35 @@
 This is the parent directory for all undo files. In this README you will find documentation for the undo file syntax and
 a list of general best practices and guidelines to follow when writing your own undo files.
 
-# Syntax
-The two groups of syntax you will need to learn in order write your own undo files are
+# Format
+All undo files are written in [TOML](https://toml.io/en/) files, due to it's easy to read and write format. If you are
+unfamiliar with TOML files, take some time to review its documentation, this project only leverages some of the most
+basic parts of the format, so it will not take you long before you are able to write and read the TOML syntax you will
+see in Undo files. There are several supported keys which you must use to properly declare an undo file:
+
+| name              | meaning                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| supported-shells  | a list of shells that every undo command will be valid in or `"all"` (default) if all shells are supported |
+| entry             | a simple object containing a command pattern and an undo expression                              |
+| entry.cmd         | the command pattern                                                                              |
+| entry.undo        | the undo expression                                                                              |
+| entry.precise     | specifies whether the current entry is [precise](#precision}                                     |
+
+Besides, TOML there are two types of syntax you will need to learn in order write your own undo files:
 [command patterns](#command-patterns) and [undo expressions](#undo-patterns-and-expressions). It is important to note
 that in both argument and undo patterns, whitespace is largely ignored, but they are case-sensitive.
+
+## Precision
+One key concept of Undo is the idea of "precision." An Undo file entry can be considered precise if the state before the
+original command is executed is the same, or functionally the same, as when the undo command is executed. For example,
+if the original command is `cp ORIGINAL COPY`, the typical way to undo this would be to remove the `COPY` file, and at a
+surface level this works fine; however, there is no way to know if the `mv` replaced a pre-existing file called `COPY`.
+
+On the other hand `cp --no-clobber ORIGINAL COPY` could be considered precise since so file would be overridden. Of
+course this is still no guarantee, if the file `COPY` existed, then the `cp` command would fail and not overwrite the
+file, but the command would still match the appropriate [command pattern](#command-patterns) and execute the
+corresponding [undo expression](#undo-patterns-and-expressions). Because of this limitation, the responsibility is on
+the user to pay attention to avoid unintentionally removing files.
 
 ## Command Patterns
 Command patterns are used to describe a specific command with or without sub-commands or arguments. For a command
@@ -132,8 +157,50 @@ Not all arguments may have a delimiter, since it does not make sense for them to
 only expect to take 1 value and can be optional.
 
 ### Argument Group Pattern
+In some cases you might need to ensure that at least one argument in a list of required arguments is present for things
+like ensuring a command is precise. There is no dynamic way to do thing without grouping them together in some way.
+Argument group patterns provide this functionality without too much more additional syntax.
+
+An argument group pattern is essentially just a list of the same argument patterns you already know wrapped up in
+`(...)`. To make the group required you must add a `!` after the opening parenthesis. For example the pattern
+`([-n --no-clobber] [--remove-destination])` is optional and `(![-n --no-clobber] [--remove-destination])` is required.
+Generally speaking an optional argument group does not add much value, and will not likely be used in most situations. A
+required group will keep a  command pattern from matching a command unless at least one of the arguments in the group is
+present. These groups are not mutually exclusive and two required arguments can be matched.
 
 ### Putting it All Together
+Now lets walk through an example. Take the following usage text
+
+```
+USAGE: foo [-v] <--do-nothing|--do-something|--do-something-else> BAR...
+
+Options:
+  -v --verbose          run verbosely
+
+Instruction arguments (at least one must be specified):
+  --do-nothing          do nothing
+  --do-something        do something
+  --do-something-else   do something else
+```
+
+The first thing to look for is the main command, in this case `foo`. Then look for any arguments that can be safely
+ignored for our purposes. Here we can only ignore `--verbose` since it does not change what the command does, only what
+is printed to the console. Now we search for anything that is required for a command to have for it to matching, which
+there are a few here. First we have a required group including the arguments `--do-nothing`, `--do-something`, and
+`--do-something-else`. Lastly, we have a positional `BAR` which expects at least one value to be supplied. All together
+we end up with a command pattern like this:
+
+```
+foo
+    [-v --verbose]
+    
+    (! [--do-nothing] [--do-something] [--do-someting-else])
+    
+    <BAR...>
+```
+
+The different pieces we extracted are separated on different lines for clarity and readability rather than necessity,
+but it is encouraged you do so too.
 
 ## Undo Patterns and Expressions
 
@@ -158,17 +225,12 @@ only expect to take 1 value and can be optional.
 #### Conditional Command Expressions
 
 # Best Practices and Guidelines
+In this section you will find some
 
 ## Grouping files
 As much as possible try to group related commands into their own directory, such as how all the GNU Coreutils commands
-are stored under the `coreutils` directory. This may also apply to a single command with large sub commands like `git`,
+are stored under the [`coreutils`](/undos/coreutils) directory. This may also apply to a single command with large sub commands like `git`,
 where each sub-command should be separated into its own file. For example, the command `git add` should be stored in a
-file called `git-add.toml`.
-
-## Precise Arguments
-Any argument that can ensure that no files are overwritten, or that when "undone" would result in essentially the same
-condition as before can be considered precise. For example, a `--no-clobber` argument to `mv` is precise as it ensures
-that no files will be overwritten; however, `--interactive` is imprecise as it is still possible for the user to have
-elected to remove the original file.
+file called `git/git-add.toml`.
 
 ## Testing

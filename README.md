@@ -57,3 +57,8 @@ a b c
 
 The `mkdir` command failed because `existing-directory` already existed, but undo went ahead and deleted the directory
 anyway.
+
+#### Wildcards
+Most if not all shells do not expand wildcards when writing to their histories, so it becomes next to impossible to undo
+the effects of the previous command if the command modifies the file system. This forces a user to always use explicit
+arguments rather than relying on their shell's expansion ability, if they want to be able to leverage Undo.
