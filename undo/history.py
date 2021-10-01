@@ -20,6 +20,15 @@ def __read_commands(stream: typing.TextIO, n: int, func: typing.Callable[[str], 
 
 def __generic_history(cmd: list[str], limit: int, file: typing.Optional[typing.TextIO],
                       func: typing.Callable[[str], str] = lambda line: line) -> list[str]:
+    """Provides a wrapper around a shell history parser function.
+
+    todo: remove file in favor of cmd = ['cat', 'path/to/file']
+
+    :param cmd: the command to call to retrieve the command history.
+    :param limit: the maximum amount off history entries too return.
+    :param file: The file-like object to read history data from.
+    :param func: the history parsing function, defaults to a simple pass-through.
+    """
     if file is None:
         logging.debug(f"running history command '{' '.join(cmd)}'")
         proc = subprocess.run(cmd, capture_output=True)
