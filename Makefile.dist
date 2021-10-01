@@ -1,7 +1,8 @@
 RM := rm --verbose --recursive
 CP := cp --verbose --recursive
 
-WHEEL := dist/${DISTRIBUTION_NAME}-py3-none-any.whl
+DISTRIBUTION_NAME := undo-${VERSION}
+WHEEL := ${DISTRIBUTION_NAME}-py3-none-any.whl
 
 UNDO_DIR := /usr/share
 
@@ -33,10 +34,10 @@ help:
 install:
 	pip install ${PIP_ARGS} ${WHEEL}
 
-	test ! -e "${UNDO_DIR}" && mkdir --verbose --parents
+	if [ ! -e ${UNDO_DIR} ]; then mkdir --verbose --parents ${UNDO_DIR}; fi
 	${CP} --target-directory ${UNDO_DIR} undos
 
 uninstall:
 	pip uninstall ${PIP_ARGS} --yes ${WHEEL}
 
-	${RM} ${UNDO_DIR}
+	${RM} ${UNDO_DIR}/undos

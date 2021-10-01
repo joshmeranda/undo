@@ -31,7 +31,10 @@ ${DISTRIBUTION_TAR}: ${WHEEL} LICENSE README.md undos Makefile.dist
 	mkdir --verbose ${DISTRIBUTION_NAME}
 
 	${CP} --target-directory ${DISTRIBUTION_NAME} ${WHEEL} LICENSE README.md
+
+	# setup the distribution tar Makefile
 	cp Makefile.dist ${DISTRIBUTION_NAME}/Makefile
+	sed -i '1i VERSION := ${VERSION}' ${DISTRIBUTION_NAME}/Makefile
 
 	# move undo files into distribution directory with a flattened directory tree
 	mkdir ${DISTRIBUTION_NAME}/undos
@@ -53,4 +56,4 @@ ${PY_SOURCES}: # do nothing
 
 clean:
 	find . -name __pychache__ -exec ${RM} '{}' +
-	${RM} build dist undo.egg-info ${DISTRIBUTION_TAR}
+	${RM} --force build dist undo.egg-info ${DISTRIBUTION_TAR} ${DISTRIBUTION_NAME}
