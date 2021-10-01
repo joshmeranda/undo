@@ -30,27 +30,23 @@ class _UndoArgumentParser(argparse.ArgumentParser):
 
         kwargs = dict()
 
-        # todo: test optional value with deliminated list?
-        # todo: limit delim to quantifiers that make sense
         if (quantifier := arg.arg_num.quantifier) == Quantifier.FLAG:
             kwargs["action"] = "store_true"
         elif quantifier == Quantifier.OPTIONAL:
             kwargs["nargs"] = "?"
-        elif quantifier == Quantifier.AT_LEAST_ONE:
-            kwargs["nargs"] = "+"
 
             if arg.delim is not None:
-                kwargs["nargs"] = None
                 kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
+                kwargs["const"] = list()
+        elif quantifier == Quantifier.AT_LEAST_ONE:
+            kwargs["nargs"] = "+"
         elif quantifier == Quantifier.ANY:
             kwargs["nargs"] = "*"
-
-            if arg.delim is not None and arg.delim != " ":
-                kwargs["nargs"] = "?"
-                kwargs["const"] = []
-                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
         elif (count := arg.arg_num.count) > 1:
             kwargs["nargs"] = count
+        elif count == 1 and arg.delim is not None:
+            if arg.delim is not None:
+                kwargs["type"] = lambda s: [i for i in s.split(arg.delim) if i]
 
         if not arg.is_positional:
             kwargs["required"] = arg.is_required

@@ -325,6 +325,10 @@ class TestArgumentGroupPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_group_with_required_argument(self):
+        with self.assertRaises(PatternError):
+            parse_argument_group_pattern("(!<SRC>)")
+
 
 class TestParseCommands(unittest.TestCase):
     def test_only_command(self):

@@ -3,7 +3,7 @@
 #   2 ) cp [OPTION]... SOURCE... DIRECTORY
 #   3 ) cp [OPTION]... -t DIRECTORY SOURCE...
 #
-# For each of these forms, the DEST or the DIRECTORY/basename(SOURCE) must
+# For each of these forms, the DEST or thes DIRECTORY/basename(SOURCE) must
 # simply be removed; howwever, the first two forms can be "safely" merged. The
 # only real difference between the two forms is whether o not DEST is a file or
 # directory which is trivial to check in the command patten.

@@ -415,7 +415,6 @@ class ConditionalCommandExpression(CommandExpression, ConditionalExpression):
         return all(f(i) for i in arg) if isinstance(arg, list) else f(arg)
 
     def __run(self, arg: str):
-        # todo: add AND and OR commands
         if self.command.body == "exists":
             result = self.__wrapper(os.path.exists, arg)
         elif self.command.body == "isfile":

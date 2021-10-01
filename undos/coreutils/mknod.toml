@@ -14,6 +14,6 @@ precise = true
 cmd = '''mknod
          [-m --mode=MODE] [-Z] [--context=CTX]
 
-         <NAME> <TYPE> (<MAJOR> <MINOR>)'''
+         <NAME> <TYPE> <MAJOR> <MINOR>'''
 undo = 'rm % $NAME... %'
 precise = true

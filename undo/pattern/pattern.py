@@ -93,6 +93,7 @@ class CommandPattern:
 # Regex                                                                       #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 __COMMAND_REGEX = re.compile("([a-zA-Z0-9_-]*)")
 
 __IDENTIFIER_REGEX = re.compile("[a-zA-Z_]+")
@@ -348,12 +349,14 @@ def parse_argument_group_pattern(content: str) -> (ArgumentGroupPattern, int):
             continue
 
         arg_match = re.match(r"([\[<].*[]>])",
-
                              content[offset::])
 
         if arg_match is not None:
             arg, size = parse_argument_pattern(arg_match.group(1))
             offset += size
+
+            if arg.is_required:
+                raise PatternError(f"argument group patterns may not contain required arguments")
 
             arguments.append(arg)
             continue
