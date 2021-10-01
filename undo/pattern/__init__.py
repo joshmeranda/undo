@@ -19,17 +19,19 @@ class _UndoArgumentParser(argparse.ArgumentParser):
         :param arg: the argument pattern to add to the parser.
         """
         if arg.is_positional:
+            self.__positional_count += 1
+
             if arg.var_name is not None:
                 names = [arg.var_name]
             else:
                 names = str(self.__positional_count)
-
-            self.__positional_count += 1
         else:
             names = arg.args
 
         kwargs = dict()
 
+        # todo: test optional value with deliminated list?
+        # todo: limit delim to quantifiers that make sense
         if (quantifier := arg.arg_num.quantifier) == Quantifier.FLAG:
             kwargs["action"] = "store_true"
         elif quantifier == Quantifier.OPTIONAL:

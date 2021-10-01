@@ -20,60 +20,6 @@ class TestPatternToArgparse(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentError):
             parser.parse_args(["some", "positional", "args"])
 
-    def test_optional_arg(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, False, None)
-        ], list())
-        parser = pattern_to_argparse(pattern)
-
-        namespace = parser.parse_args([])
-        self.assertEqual(argparse.Namespace(VAL=None), namespace)
-
-        namespace = parser.parse_args(["-V", "value"])
-        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
-
-        namespace = parser.parse_args(["--val", "value"])
-        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
-
-    def test_required_arg(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, True, None)
-        ], list())
-        parser = pattern_to_argparse(pattern)
-
-        with self.assertRaises(argparse.ArgumentError):
-            parser.parse_known_args([])
-
-        namespace = parser.parse_args(["-V", "value"])
-        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
-
-        namespace = parser.parse_args(["--val", "value"])
-        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
-
-    def test_positional_arg(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("VAL", ArgNum(Quantifier.AT_LEAST_ONE, None), list(), True, True, None)
-        ], list())
-        parser = pattern_to_argparse(pattern)
-
-        with self.assertRaises(argparse.ArgumentError):
-            parser.parse_known_args([])
-
-        namespace = parser.parse_args(["value"])
-        self.assertEqual(argparse.Namespace(VAL=["value"]), namespace)
-
-        namespace = parser.parse_args(["value", "another", "final"])
-        self.assertEqual(argparse.Namespace(VAL=["value", "another", "final"]), namespace)
-
-    def test_flag_arg(self):
-        command_pattern = CommandPattern("test", list(), [
-            ArgumentPattern("verbose", ArgNum(Quantifier.FLAG), ["--verbose"], False, False, None)
-        ], list())
-        parser = pattern_to_argparse(command_pattern)
-
-        namespace = parser.parse_args(["--verbose"])
-        self.assertEqual(argparse.Namespace(verbose=True), namespace)
-
     def test_sub_command(self):
         pattern = CommandPattern("test", ["one"], list(), list())
         parser = pattern_to_argparse(pattern)
@@ -113,79 +59,39 @@ class TestPatternToArgparse(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_at_least_one_argument(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, False, None)
-        ], list())
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Required Testing                                                        #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+    def test_optional_arg(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, False, None)
+        ], list())
         parser = pattern_to_argparse(pattern)
 
-        expected = argparse.Namespace(LIST=["a", "b", "c", "d"])
-        actual = parser.parse_args("--list a b c d".split())
+        namespace = parser.parse_args([])
+        self.assertEqual(argparse.Namespace(VAL=None), namespace)
 
-        self.assertEqual(expected, actual)
+        namespace = parser.parse_args(["-V", "value"])
+        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
+
+        namespace = parser.parse_args(["--val", "value"])
+        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
+
+    def test_required_arg(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("VAL", ArgNum(Quantifier.N, 1), ["-V", "--val"], False, True, None)
+        ], list())
+        parser = pattern_to_argparse(pattern)
 
         with self.assertRaises(argparse.ArgumentError):
-            parser.parse_args("--list".split())
+            parser.parse_known_args([])
 
-    def test_any_argnum(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False, None)
-        ], list())
+        namespace = parser.parse_args(["-V", "value"])
+        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
 
-        parser = pattern_to_argparse(pattern)
-
-        expected = argparse.Namespace(LIST=[])
-        actual = parser.parse_args("--list".split())
-
-        self.assertEqual(expected, actual)
-
-        expected = argparse.Namespace(LIST=["a", "b"])
-        actual = parser.parse_args("--list a b".split())
-
-        self.assertEqual(expected, actual)
-
-    def test_list_delim_any(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, True, ","),
-        ], list())
-
-        parser = pattern_to_argparse(pattern)
-
-        expected = argparse.Namespace(LIST=["a", "b", "c"])
-        actual = parser.parse_args(["--list", "a,b,c"])
-
-        self.assertEqual(expected, actual)
-
-        expected = argparse.Namespace(LIST=["a"])
-        actual = parser.parse_args(["--list", "a"])
-
-        self.assertEqual(expected, actual)
-
-        expected = argparse.Namespace(LIST=[])
-        actual = parser.parse_args(["--list"])
-
-        self.assertEqual(expected, actual)
-
-    def test_list_delim_at_least_one(self):
-        pattern = CommandPattern("test", list(), [
-            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, True, ",")
-        ], list())
-
-        parser = pattern_to_argparse(pattern)
-
-        expected = argparse.Namespace(LIST=["a", "b", "c"])
-        actual = parser.parse_args(["--list", "a,b,c"])
-
-        self.assertEqual(expected, actual)
-
-        expected = argparse.Namespace(LIST=["a"])
-        actual = parser.parse_args(["--list", "a"])
-
-        self.assertEqual(expected, actual)
-
-        with self.assertRaises(argparse.ArgumentError):
-            parser.parse_args(["--list"])
+        namespace = parser.parse_args(["--val", "value"])
+        self.assertEqual(argparse.Namespace(VAL="value"), namespace)
 
     def test_arg_group_optional(self):
         pattern = CommandPattern("test", list(), list(), [
@@ -285,6 +191,133 @@ class TestPatternToArgparse(unittest.TestCase):
 
         expected = argparse.Namespace(NUMBER="10")
         actual = parser.parse_args(["--number", "10"])
+
+        self.assertEqual(expected, actual)
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Identifier Testing                                                      #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_mixed_positional_args(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern(None, ArgNum(Quantifier.N, 1), list(), True, True, None),
+            ArgumentPattern("FILE", ArgNum(Quantifier.N, 1), list(), True, True, None),
+            ArgumentPattern(None, ArgNum(Quantifier.N, 1), list(), True, True, None),
+        ], list())
+        parser = pattern_to_argparse(pattern)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args(["a"])
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args(["a", "b"])
+
+        namespace = parser.parse_args(["a", "b", "c"])
+        self.assertEqual(argparse.Namespace(FILE="b", **{"1": "a", "3": "c"}), namespace)
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Quantifier Testing                                                      #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_positional_arg(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("VAL", ArgNum(Quantifier.AT_LEAST_ONE, None), list(), True, True, None)
+        ], list())
+        parser = pattern_to_argparse(pattern)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args([])
+
+        namespace = parser.parse_args(["value"])
+        self.assertEqual(argparse.Namespace(VAL=["value"]), namespace)
+
+        namespace = parser.parse_args(["value", "another", "final"])
+        self.assertEqual(argparse.Namespace(VAL=["value", "another", "final"]), namespace)
+
+    def test_flag_arg(self):
+        command_pattern = CommandPattern("test", list(), [
+            ArgumentPattern("verbose", ArgNum(Quantifier.FLAG), ["--verbose"], False, False, None)
+        ], list())
+        parser = pattern_to_argparse(command_pattern)
+
+        namespace = parser.parse_args(["--verbose"])
+        self.assertEqual(argparse.Namespace(verbose=True), namespace)
+
+    def test_at_least_one_argument(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.AT_LEAST_ONE), ["--list"], False, False, None)
+        ], list())
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c", "d"])
+        actual = parser.parse_args("--list a b c d".split())
+
+        self.assertEqual(expected, actual)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args("--list".split())
+
+    def test_any_argnum(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.ANY), ["--list"], False, False, None)
+        ], list())
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=[])
+        actual = parser.parse_args("--list".split())
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a", "b"])
+        actual = parser.parse_args("--list a b".split())
+
+        self.assertEqual(expected, actual)
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Delimiter Testing                                                       #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_delim_splitting(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.N, 1), ["--list"], False, True, ","),
+        ], list())
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c"])
+        actual = parser.parse_args(["--list", "a,b,c"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a"])
+        actual = parser.parse_args(["--list", "a"])
+
+        self.assertEqual(expected, actual)
+
+        with self.assertRaises(argparse.ArgumentError):
+            parser.parse_args(["--list"])
+
+    def test_delim_splitting_optional(self):
+        pattern = CommandPattern("test", list(), [
+            ArgumentPattern("LIST", ArgNum(Quantifier.OPTIONAL), ["--list"], False, True, ","),
+        ], list())
+
+        parser = pattern_to_argparse(pattern)
+
+        expected = argparse.Namespace(LIST=["a", "b", "c"])
+        actual = parser.parse_args(["--list", "a,b,c"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=["a"])
+        actual = parser.parse_args(["--list", "a"])
+
+        self.assertEqual(expected, actual)
+
+        expected = argparse.Namespace(LIST=[])
+        actual = parser.parse_args(["--list"])
 
         self.assertEqual(expected, actual)
 

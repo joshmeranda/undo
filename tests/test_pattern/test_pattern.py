@@ -15,17 +15,43 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_parse_flag_name_no_braces(self):
-        content = "[-v --verbose VERBOSE]"
+    def test_bad_braces(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[>")
 
         with self.assertRaises(PatternError):
-            parse_argument_pattern(content)
+            parse_argument_pattern("<]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("<")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("I am not wrapped at all")
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Identifier Testing                                                      #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_parse_flag_name_no_braces(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[-v --verbose VERBOSE]")
 
     def test_parse_flag_no_name(self):
         content = "[-v --verbose]"
 
         expected = ArgumentPattern("VERBOSE", ArgNum(Quantifier.FLAG, ), ["-v", "--verbose"], False, False, None), \
                    len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_argument_no_name(self):
+        content = "[-d --dir=]"
+
+        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -38,6 +64,27 @@ class TestArgumentPattern(unittest.TestCase):
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
+
+    def test_positional_missing_var_name(self):
+        content = "<>"
+
+        expected = ArgumentPattern(None, ArgNum(Quantifier.N, 1), list(), True, True, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_kebab_name(self):
+        content = "[--no-clobber]"
+
+        expected = ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG, ), ["--no-clobber"], False, False, None), \
+                   len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Quantifier Testing                                                      #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_parse_single(self):
         content = "[-d --dir=DIR]"
@@ -52,22 +99,6 @@ class TestArgumentPattern(unittest.TestCase):
 
         expected = ArgumentPattern("FIELDS", ArgNum(Quantifier.ANY), ["-f", "--fields"], False, False, None), \
                    len(content)
-        actual = parse_argument_pattern(content)
-
-        self.assertEqual(expected, actual)
-
-    def test_positional_any(self):
-        content = "<SRC*>"
-
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True, None), len(content)
-        actual = parse_argument_pattern(content)
-
-        self.assertEqual(expected, actual)
-
-    def test_positional_one(self):
-        content = "<SRC>"
-
-        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -89,26 +120,35 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_optional_arg(self):
-        content = "[--optional[=OPTIONAL]]"
+    def test_parse_n_args_with_zero(self):
+        content = "[-f --flag={0}]"
 
-        expected = ArgumentPattern("OPTIONAL", ArgNum(Quantifier.OPTIONAL), ["--optional"], False, False, None), len(content)
-        actual = parse_argument_pattern(content)
-
-        return self.assertEqual(expected, actual)
-
-    def test_missing_var_name(self):
-        content = "[-d --dir=]"
-
-        expected = ArgumentPattern("DIR", ArgNum(Quantifier.N, 1), ["-d", "--dir"], False, False, None), len(content)
+        expected = ArgumentPattern("FLAG", ArgNum(Quantifier.FLAG), ["-f", "--flag"], False, False, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
 
-    def test_positional_missing_var_name(self):
-        content = "<...>"
+    def test_optional_arg(self):
+        content = "[--optional[=OPTIONAL]]"
 
-        expected = ArgumentPattern(None, ArgNum(Quantifier.AT_LEAST_ONE), list(), True, True, None), len(content)
+        expected = ArgumentPattern("OPTIONAL", ArgNum(Quantifier.OPTIONAL), ["--optional"], False, False, None), \
+                   len(content)
+        actual = parse_argument_pattern(content)
+
+        return self.assertEqual(expected, actual)
+
+    def test_positional_one(self):
+        content = "<SRC>"
+
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.N, 1), list(), True, True, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
+    def test_positional_any(self):
+        content = "<SRC*>"
+
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.ANY), list(), True, True, None), len(content)
         actual = parse_argument_pattern(content)
 
         self.assertEqual(expected, actual)
@@ -127,8 +167,29 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_bad_quantifier_value(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("<{}>")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("<{}>")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("<..>")
+
+    def test_bad_optional_values(self):
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[-n[=N{2}]]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--at-least-one [=AT_LEAST_ONE...]")
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Delimiter Testing                                                       #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_empty_delim(self):
-        content = "<--number =NUMBER:>"
+        content = "<--number=NUMBER:>"
 
         expected = ArgumentPattern("NUMBER", ArgNum(Quantifier.N, 1), ["--number"], False, True, None), len(content)
         actual = parse_argument_pattern(content)
@@ -159,13 +220,23 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_missing_var_name_with_delim(self):
-        # todo: should this be an error?
+    def test_missing_delim_with_bad_quantifier(self):
         with self.assertRaises(PatternError):
             parse_argument_pattern("[--src:,]")
 
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--lists=...:,]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--lists=*:,]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--lists={0}:,]")
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern("[--lists={2}:,]")
+
     def test_missing_empty_var_name_with_delim(self):
-        # todo: should this be an error?
         content = "[--src[=]:,]"
 
         expected = ArgumentPattern("SRC", ArgNum(Quantifier.OPTIONAL), ["--src"], False, False, ","), len(content)
@@ -173,31 +244,15 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # Bad Syntax Testing                                                       #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_missing_closing_var_brace(self):
         content = "[--number[=NUMBER]"
 
         with self.assertRaises(PatternError):
             parse_argument_pattern(content)
-
-    def test_bad_braces(self):
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("[>")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<]")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("]")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("I am not wrapped at all")
-
-    def test_missing_var_delimiter(self):
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("[--number NUMBER]")
 
     def test_bad_argument_name(self):
         with self.assertRaises(PatternError):
@@ -217,32 +272,6 @@ class TestArgumentPattern(unittest.TestCase):
 
         with self.assertRaises(PatternError):
             parse_argument_pattern("[-a Z]")
-
-    def test_bad_quantifier_value(self):
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<{}>")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<{}>")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("<..>")
-
-    def test_bad_optional_values(self):
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("[-n[=N{2}]]")
-
-        with self.assertRaises(PatternError):
-            parse_argument_pattern("[--at-least-one [=AT_LEAST_ONE...]")
-
-    def test_kebab_name(self):
-        content = "[--no-clobber]"
-
-        expected = ArgumentPattern("NO_CLOBBER", ArgNum(Quantifier.FLAG, ), ["--no-clobber"], False, False, None), \
-                   len(content)
-        actual = parse_argument_pattern(content)
-
-        self.assertEqual(expected, actual)
 
 
 class TestArgumentGroupPattern(unittest.TestCase):

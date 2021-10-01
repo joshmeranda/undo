@@ -164,12 +164,16 @@ def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, 
             quantifier = Quantifier.ANY
             offset = 1
         elif body[0] == "{":
-            quantifier = Quantifier.N
-
             try:
                 n = int(match.group(1))
             except ValueError as err:
                 raise PatternError(f"bad quantifier: {err}")
+
+            if n == 0:
+                quantifier = Quantifier.FLAG
+                n = None
+            else:
+                quantifier = Quantifier.N
 
             offset = match.end()
         else:
@@ -184,7 +188,9 @@ def __parse_arg_num(content: str, is_optional: bool, is_flag: bool) -> (ArgNum, 
 def __parse_var(content: str, is_positional: bool) -> (typing.Optional[str], ArgNum, int):
     """Parse the argument's meta var and argument count."""
     if content[0] in "]>":
-        return None, ArgNum(Quantifier.FLAG), 0
+        return (None,
+                ArgNum(Quantifier.N, 1) if is_positional else ArgNum(Quantifier.FLAG),
+                0)
 
     offset = 0
 
@@ -281,6 +287,10 @@ def parse_argument_pattern(content: str) -> (ArgumentPattern, int):
 
     delim, size = __parse_delim(content[offset::])
     offset += size
+
+    if (delim is not None and not (arg_num.quantifier == Quantifier.N and arg_num.count == 1
+                                   or arg_num.quantifier == Quantifier.OPTIONAL)):
+        raise PatternError(f"Only arguments taking 1 or optional values may specify a delimiter")
 
     try:
         if (close_brace := content[offset]) in "]>":
