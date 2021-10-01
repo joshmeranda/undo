@@ -15,6 +15,12 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_parse_flag_name_no_braces(self):
+        content = "[-v --verbose VERBOSE]"
+
+        with self.assertRaises(PatternError):
+            parse_argument_pattern(content)
+
     def test_parse_flag_no_name(self):
         content = "[-v --verbose]"
 
@@ -153,9 +159,19 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_missing_var_description(self):
+    def test_missing_var_name_with_delim(self):
+        # todo: should this be an error?
         with self.assertRaises(PatternError):
             parse_argument_pattern("[--src:,]")
+
+    def test_missing_empty_var_name_with_delim(self):
+        # todo: should this be an error?
+        content = "[--src[=]:,]"
+
+        expected = ArgumentPattern("SRC", ArgNum(Quantifier.OPTIONAL), ["--src"], False, False, ","), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
 
     def test_missing_closing_var_brace(self):
         content = "[--number[=NUMBER]"

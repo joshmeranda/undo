@@ -3,7 +3,8 @@ a list of general best practices and guidelines to follow when writing your own 
 
 # Syntax
 The two groups of syntax you will need to learn in order write your own undo files are
-[command patterns](#command-patterns) and [undo expressions](#undo-patterns-and-expressions).
+[command patterns](#command-patterns) and [undo expressions](#undo-patterns-and-expressions). It is important to note
+that in both argument and undo patterns, whitespace is largely ignored, but they are case-sensitive.
 
 ## Command Patterns
 Command patterns are used to describe a specific command with or without sub-commands or arguments. For a command
@@ -44,23 +45,39 @@ before the long names.
 All arguments can also be either required or optional, and or positional or not positional. All positional arguments
 must also be required (but can be made optional by giving a [quantifier](#quantifiers) of '*'). You can specify whether
 an argument is required or not by wrapping them in either `[...]` (optional) or `<...>` (required). For example, the
-pattern `[--verbose]` is optional but `<--fields=>` is required.
+pattern `[--verbose]` is optional but `<--verbose>` is required (although a required flag is probably not of much use).
 
 Positional arguments might be slightly more difficult to spot. They will always be wrapped in `<...>` and will never
-have any leading argument names. They will simply stand alone. For example, "<SRC>" or even "<>" (this situation is
+have any leading argument names. They will simply stand alone. For example, `<SRC>` or even `<>` (this situation is
 covered in detail in the [variable name](#variable-name) section.)
 
-### Argument Group Patten
-
-
 #### Variable Name
-The name associated with an argument
+The names associated with an argument are themselves not very useful, but when used in combination with an
+[undo expression](#undo-patterns-and-expressions), they can be fairly powerful as they are used to access the values
+pass on the command line. The name associated with an argument can be either implicit or explicit. Implicit names are
+the simplest. If the argument pattern is non-positional (it has argument names), Undo will take the longest variable
+name and cast it to upper camel case. For example, the pattern `[-c --no-clobber]` would have the variable name
+`NO_CLOBBER`. The implicit name of positional arguments is dependent on their position, in that the first positionals
+name is `1` the second's is `2`, and so on and so forth.
+
+Explicit names can be more tricky, but the most simple in positional arguments. Many positional arguments are going to
+consist of the variable name and nothing else. For example, the argument pattern `<SRC>` describes a positional argument
+whose variable name is `SRC`. Non-positional arguments are slightly more complex. If the argument is a flag and does not
+expect to receive any arguments, right after the argument names wrap the variable name in `[...]` (ex.
+`[--verbose [VERBOSE]]`). Most often flags will be used with implicit variable names. Arguments expecting a value are
+very similar but the name is only wrapped in `[...]` if the argument is able to take 0 values as well, but will always
+have an `=` before the actual name. For example, an argument which can either take 1 or 0 values with an explicit name
+would look like this `[--arg[=ARGUMENT]]`, but if required exactly 1 argument it would look like this `[--arg=ARGUMENT]`.
+The next section will cover how to specify the amount of values an argument pattern expects.
+
+There is some crossover between implicit and explicit variable names. For example the pattern `<--src[=]>` generates the
+variable name even though the `[...]` pattern is present, and so it is an implicit name using explicit syntax.
 
 #### Quantifiers
 
 #### List Values
 
-### Argument Group
+### Argument Group Pattern
 
 ### Put it All Together
 
