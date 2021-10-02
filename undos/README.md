@@ -265,6 +265,24 @@ elements. Due to this, it is probably not a good idea to leave multiple accessor
 targeting the same identifier.
 
 #### Ternary Expressions
+In many instances it can be beneficial to check the stare of the environment with a conditional when evaluating
+expressions. To do this you can use a ternary expression. The syntax might be familiar to those with experience with
+languages like C, C++, Java, etc. The general expression follows this pattern
+`<[conditional expression](#conditional-expressions)> ? <value expression> : <value expression>`. If the conditional
+expression evaluates to true, the ternary expression will evaluate to the value from the first value expression. If
+false, the second value expression is used. You may also choose to omit the second value expression, but if the
+conditional expression evaluates to false, the entire expression will evaluate to an empty value.
+
+Here are some examples of ternary expressions:
+
+```
+IDENTIFIER ? $IDENTIFIER : $ANOTHER_VALUE
+
+IDENTIFIER ? $IDENTIFIER
+
+# nested ternary conditional (these are messy and should be avoided)
+! IDENTIFIER ? ANOTHER_VALUE ? $ANOTHER_VALUE : 'a string literal' : $IDENTIFIER
+```
 
 #### String Literal Expressions
 
@@ -281,7 +299,7 @@ targeting the same identifier.
 #### Conditional Command Expressions
 
 # Best Practices and Guidelines
-In this section you will find some
+In this section you will find some general best practices, and guidelines to follow when writing your own undo files.
 
 ## Grouping files
 As much as possible try to group related commands into their own directory, such as how all the GNU Coreutils commands
