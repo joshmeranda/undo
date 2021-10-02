@@ -824,6 +824,14 @@ class TestStringExpansion(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
+    def test_list_expansions(self):
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "`$LIST...`", 0))
+
+        expected = "a b c"
+        actual = expr.evaluate({"LIST": ["a", "b", "c"]})
+
+        self.assertEqual(expected, actual)
+
     def test_empty_expansion(self):
         expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This expansion is `$EMPTY`", 0))
 
@@ -833,10 +841,21 @@ class TestStringExpansion(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_bad_expression_expansion(self):
-        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "THis is a bad `expression`", 0))
+        expr = StringExpansionExpression(Token(TokenKind.STRING_EXPANSION, "This is a bad `expression`", 0))
 
         with self.assertRaises(ParseError):
             expr.evaluate(dict())
+
+    def test(self):
+        expr = expression.parse('join("=== `$LIST` ===", ";")')
+
+        assert isinstance(expr, ValueExpression)
+
+        result = expr.evaluate({"LIST": ["a", "b", "c"]})
+
+        print(result)
+
+        self.fail()
 
 
 class TestExistenceExpression(unittest.TestCase):
@@ -931,6 +950,20 @@ class TestValueCommandExpression(unittest.TestCase):
 
         expected = "a,b,c"
         actual = expr.evaluate({"LIST": ["a", "b", "c"]})
+
+        self.assertEqual(expected, actual)
+
+    def test_join_no_list(self):
+        expr = ValueCommandExpression(
+            Token(TokenKind.COMMAND, "join", 0),
+            [
+                AccessorExpression(Token(TokenKind.IDENT, "STR", 0), False),
+                StringLiteralExpression(Token(TokenKind.STRING_LITERAL, ",", 0))
+            ]
+        )
+
+        expected = "abc"
+        actual = expr.evaluate({"STR": "abc"})
 
         self.assertEqual(expected, actual)
 

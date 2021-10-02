@@ -285,8 +285,27 @@ IDENTIFIER ? $IDENTIFIER
 ```
 
 #### String Literal Expressions
+String literals are perhaps the simplest value expression. They evaluate to exactly what is wrapped between the `'`. For
+example, the expression `echo % 'hello' %` would evaluate to `"echo hello"`.
+
+You are able to escape any single quotes inside as well. For example, `echo % 'Bilbo\'s ring' %` evaluates to
+`"echo Bilbo's ring"`.
 
 #### String Expansion Expressions
+String expansions allow for string interpolation with other value expressions. Within a string, if you wrap an undo
+expression in `` `... ` `` it will be replaced with its evaluation. For example, ``"the `$CREATURE_OF_MIDDLE_EARTH` of
+moria"`` with `CREATURE_OF_MIDDLE_EARTH` set to `balgrog` would expand to `the balrog of moria`. The accessor expression
+`$CREATURE_OF_MIDDLE_EARTH` within the string expansion was evaluated and replaced with the value of that evaluation.
+
+If one or more of the expressions in a string expansions expression evaluate to a list, the behavior is slightly
+different from that specified in the [list expansions](#list-expansion) section. When an expression is evaluated to a
+list, it goes through each of the same steps except the list of values is never joined.
+
+Let us assume that the identifier `LIST` has the value `["a", "b", "c"]`. If we wanted to show the list of values we
+might write the string expansion ``"LIST = `$LIST`"``; however, this would evaluate to the list value `["LIST = a",
+"LIST = b", LIST = c"]` because string expansions do not join unexpanded list values. To get the proper listing you can
+simply expand the list value: ``"LIST = `$LIST...`"``. Another equivalent option is to leverage the `join`
+[command expression](#command-expressions).
 
 ### Conditional Expressions
 
@@ -295,6 +314,7 @@ IDENTIFIER ? $IDENTIFIER
 ### Command Expressions
 
 #### Value Command Expressions
+[ ] specify `join` as the way to handle commands returning a string
 
 #### Conditional Command Expressions
 

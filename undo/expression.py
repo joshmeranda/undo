@@ -362,6 +362,7 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
         elif self.command.body == "env":
             return self.__wrapper(os.getenv, args[0])
         elif self.command.body == "join":
+            # todo: handle args[0] being a str
             return args[1].join(args[0])
 
         raise UnknownCommandException(self.command)

@@ -9,6 +9,8 @@
 # directory which is trivial to check in the command patten.
 #
 # Documentation: https://www.gnu.org/software/coreutils/cp
+#
+# todo: use join(expr, " ") when removing files and the like to limit the aomut of commands run
 
 
 # cp [OPTION]... [-T] SOURCE DEST
