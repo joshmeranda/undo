@@ -16,7 +16,7 @@ see in Undo files. There are several supported keys which you must use to proper
 | entry.precise     | specifies whether the current entry is [precise](#precision}                                     |
 
 Besides, TOML there are two types of syntax you will need to learn in order write your own undo files:
-[command patterns](#command-patterns) and [undo expressions](#undo-patterns-and-expressions). It is important to note
+[command patterns](#command-patterns) and [undo expressions](#undo-expressions). It is important to note
 that in both argument and undo patterns, whitespace is largely ignored, but they are case-sensitive.
 
 ## Precision
@@ -28,7 +28,7 @@ surface level this works fine; however, there is no way to know if the `mv` repl
 On the other hand `cp --no-clobber ORIGINAL COPY` could be considered precise since so file would be overridden. Of
 course this is still no guarantee, if the file `COPY` existed, then the `cp` command would fail and not overwrite the
 file, but the command would still match the appropriate [command pattern](#command-patterns) and execute the
-corresponding [undo expression](#undo-patterns-and-expressions). Because of this limitation, the responsibility is on
+corresponding [undo expression](#undo-expressions). Because of this limitation, the responsibility is on
 the user to pay attention to avoid unintentionally removing files.
 
 ## Command Patterns
@@ -78,7 +78,7 @@ covered in detail in the [identifier](#identifier) section.)
 
 #### Identifier
 The names associated with an argument are themselves not very useful, but when used in combination with an
-[undo expression](#undo-patterns-and-expressions), they can be fairly powerful as they are used to access the values
+[undo expression](#undo-expressions), they can be fairly powerful as they are used to access the values
 pass on the command line. The name associated with an argument can be either implicit or explicit. Implicit names are
 the simplest. If the argument pattern is non-positional (it has argument names) and no identifier is explicitly
 given, Undo will take the longest identifier and cast it to upper camel case. For example, the pattern
@@ -144,7 +144,7 @@ expect the identifier (ex `[-n --numbers=...]`)
 
 #### Delimiter
 Some arguments may take a list of values rather the several distinct values, and when accessing those values later in an
-[undo expression](#undo-patterns-and-expressions) it might be tremendously helpful to be able to split up those values
+[undo expression](#undo-expressions) it might be tremendously helpful to be able to split up those values
 to be able to operate on them individually. To allow this, you may specify a delimiter in your argument pattern.
 
 The delimiter is started with a `:` and should follow the identifier and quantifier if they exist. Anything between the
@@ -202,11 +202,67 @@ foo
 The different pieces we extracted are separated on different lines for clarity and readability rather than necessity,
 but it is encouraged you do so too.
 
-## Undo Patterns and Expressions
+## Undo Expressions
+Undo expressions are the second part of Undo files that work in tandem with [command patterns](#command-patterns) to
+create a command which can reverse the effects of another. These expressions are able to access the values passed to the
+original command, and use them to dynamically generate an entirely new command.
+
+One or more of these expressions are interpolated in a larger string by surrounding them in `% ... %`. For example, the
+string `"echo % $VALUE %` would evaluate to "echo " + the value in the variable `VALUE` specified in the associated
+command pattern by an argument like `[--value=]`. Here we accessing the value of the argument `--value` using an
+[accessor expression](#accessor-expressions) which  will be explained in a later section.
+
+Within each undo expression you have access to all the values specified in the command pattern by using each argument
+pattern's identifier. Using the pattern we made in [putting it all together](#putting-it-all-together) as an example, we
+would have access to the values `VERBOSE`, `DO_NOTHING`, `DO_SOMETHING`, `DO_SOMETHING_ELSE`, and `BAR`. In most cases
+you should only be pulling the values from required or positional arguments since those are the only you will be
+guaranteed to have a value in; however, using some [conditional expressions](#conditional-expressions) you are able to
+check for the existence of a value before accessing it. In much the same way with environment variables, if the value
+does not exist, you will pull an empty string.
 
 ### Value Expressions
+Value expressions evaluate to string or list values.
 
 #### Accessor Expressions
+Accessor expressions are used to pull the values from the command arguments using their identifiers. All accessor
+expressions will being with a `$` which should be familiar to you the syntax of most shells. The `$` is then followed by
+the identifier of the value (ie `SRC`, `BAR`, etc). Optionally you may also add a trailing `...` to the end of the
+expression to allow for [list expansion](#list-expansion). If the value is not a list, and you instruct it to perform a
+list expansion, the value will still only be expanded to a single value.
+
+##### List Expansion
+If the value of a command argument is a string the evaluation and expansion of the resulting command is trivial, in that
+the string value needs only be inserted into the command at the appropriate location. But what do you do when the
+argument is given a list? There are two solutions:
+
+ 1) join the list of string together with a common delimiter 
+ 2) split the entire string on the list value, and insert each value individually into the list, and join each new string together with a delimiter
+
+For those familiar with the [GNU findutils `find`](https://www.gnu.org/software/findutils/) command, the difference
+between these two methods is similar to the difference between `-exec '{}' \;` and `-exec '{}' \+`. With `-exec '{}' \;`
+you will be running a command for every found file individually, as if you were chaining multiple commands calls
+together `;` (ex `echo a; echo b;`). On the other hand using `-exec '{}' \+` allows you to "expand" each of the file
+paths for use in a single command (eg `echo a b`).
+
+Let's take the command pattern `foo <BAR...>` which can be undone by an `un-foo` command which will consumes any number
+of arguments for example. The value `BAR` will be a list of at least one value. Given that the last run command was
+`foo a b c` we have 2 ways in which we can undo the `foo` command.
+
+The simplest, and incidentally the best, option is to use the first option with this undo expression:
+`un-foo % $BAR... %`. This expression will expand out to `un-foo a b c`. This is because the list value stored in `BAR`
+was expanded from the separate `['a", "b", "c"]` into a single `"a b c"`.
+
+Your other option is to not expand the list with the expression `"un-foo % $BAR %"`. This expression will expand out
+into several chained commands: `un-foo a; un-foo b; un-foo c`. This is because the list value stored in `BAR` is not
+expanded, so for each value in the list the expression is replaced with the value and then joined using `; ` as a
+delimiter (`"un-foo % $BAR %" -> ["un-foo a", "un-foo b", "un-foo c"] -> "un-foo a; un-foo b; un-foo c`). Clearly this
+method will call the same command multiple times whereas expanding the list would only call the `un-foo` command once,
+meaning that if you are able to expand a list value you should since it will likely lead to a more efficient undo
+command.
+
+Note that multiple list values can be used in the same expression; however, they must all have the same amount of
+elements. Due to this, it is probably not a good idea to leave multiple accessor expressions un-expanded unless they are
+targeting the same identifier.
 
 #### Ternary Expressions
 
