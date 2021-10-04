@@ -34,8 +34,8 @@ added at any time, and will be used to resolve undo commands as long as the pare
 
 ## Known Limitations
 Obviously Undo can only do so much, especially when pulling the target command from history, and may end up in
-situations where it does thing you don't want. Here you will find a list of known limitations that do not have an easy
-solution and will likely always be a plague upon it:
+situations where it does something you didn't want or expect it to do. Here you will find a list of known limitations
+that do not have an easy solution and will likely always be a plague upon it:
 
 #### Typos
 If the last command contained a typo, Undo will likely have no idea what to do with it unless the typo matched another

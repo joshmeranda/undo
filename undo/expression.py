@@ -311,7 +311,7 @@ class ExistenceExpression(ConditionalExpression):
                 and self.right == other.right)
 
     def evaluate(self, env: dict[str, typing.Union[str, list[str]]]) -> bool:
-        exists = self.identifier.body in env and env[self.identifier.body]
+        exists = env.get(self.identifier.body, "") and True
 
         return not exists if self.negate else exists
 
@@ -359,9 +359,11 @@ class ValueCommandExpression(CommandExpression, ValueExpression):
         elif self.command.body == "abspath":
             return self.__wrapper(os.path.abspath, args[0])
         elif self.command.body == "env":
-            return self.__wrapper(os.getenv, args[0])
+            return os.getenv(args[0])
         elif self.command.body == "join":
-            # todo: handle args[0] being a str
+            if isinstance(args[0], str):
+                return args[0]
+
             return args[1].join(args[0])
 
         raise UnknownCommandException(self.command)

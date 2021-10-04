@@ -56,7 +56,7 @@ Obviously rare is the command which takes only sub-commands and no arguments. Th
 Argument patterns are the basic building blocks of any command pattern. Almost all except the most simple command
 patterns will need at least a few argument patterns in order to completely describe the functionality the command
 provides. Any argument pattern can be broken down into a few parts:
- - Argument names (ex -v, --verbose)
+ - Argument names (eg -v, --verbose)
  - [Identifier](#identifier)
  - [Quantifier](#quantifier)
  - [Delimiter](#delimiter)
@@ -88,7 +88,7 @@ their position, in that the first positionals name is `1` the second's is `2`, a
 Explicit names can be more tricky, but the most simple in positional arguments. Many positional arguments are going to
 consist of the identifier and nothing else. For example, the argument pattern `<SRC>` describes a positional argument
 whose identifier is `SRC`. Non-positional arguments are slightly more complex. If the argument is a flag and does not
-expect to receive any arguments, right after the argument names wrap the identifier in `[...]` (ex.
+expect to receive any arguments, right after the argument names wrap the identifier in `[...]` (eg
 `[--verbose [VERBOSE]]`). Most often flags will be used with implicit identifiers. Arguments expecting a value are
 very similar but the name is only wrapped in `[...]` if the argument is able to take 0 values as well, but will always
 have an `=` before the actual name. For example, an argument which can either take 1 or 0 values with an explicit name
@@ -140,7 +140,7 @@ consistent with the method you use. This means you can specify a positional argu
 as either `<*>` or `<[...]>`.
 
 You do not need to specify an identifier to specify a quantifier, you can simply put the quantifier where you would
-expect the identifier (ex `[-n --numbers=...]`)
+expect the identifier (eg `[-n --numbers=...]`)
 
 #### Delimiter
 Some arguments may take a list of values rather the several distinct values, and when accessing those values later in an
@@ -209,7 +209,7 @@ original command, and use them to dynamically generate an entirely new command.
 
 One or more of these expressions are interpolated in a larger string by surrounding them in `% ... %`. For example, the
 string `"echo % $VALUE %` would evaluate to "echo " + the value in the variable `VALUE` specified in the associated
-command pattern by an argument like `[--value=]`. Here we accessing the value of the argument `--value` using an
+command pattern by an argument like `[--value=]`. Here we're accessing the value of the argument `--value` using an
 [accessor expression](#accessor-expressions) which  will be explained in a later section.
 
 Within each undo expression you have access to all the values specified in the command pattern by using each argument
@@ -241,7 +241,7 @@ argument is given a list? There are two solutions:
 For those familiar with the [GNU findutils `find`](https://www.gnu.org/software/findutils/) command, the difference
 between these two methods is similar to the difference between `-exec '{}' \;` and `-exec '{}' \+`. With `-exec '{}' \;`
 you will be running a command for every found file individually, as if you were chaining multiple commands calls
-together `;` (ex `echo a; echo b;`). On the other hand using `-exec '{}' \+` allows you to "expand" each of the file
+together `;` (eg `echo a; echo b;`). On the other hand using `-exec '{}' \+` allows you to "expand" each of the file
 paths for use in a single command (eg `echo a b`).
 
 Let's take the command pattern `foo <BAR...>` which can be undone by an `un-foo` command which will consumes any number
@@ -334,9 +334,54 @@ if the matched command was `foo --verbose a b c` then undo command would be `un-
 if the matched command was `foo a b c` then the undo command would be `un-foo a b c`.
 
 ### Command Expressions
+The last type of expression you will be using to build sophisticated Undo expressions are command expressions. These
+expressions function and look very similar to the method calls you might see in most popular programming languages: a
+unique name followed by [value expression](#value-expressions) arguments surrounded by parentheses (eg
+`basename($ABSOLUTE_PATH)`). These command expression will allow you to perform operations on the values supplied by the
+target command, to give you a little more leverage over how to undo certain commands.
+
+If the wrong number of arguments are passed to the command expressions, the expression will fail.
+
+All command expressions will also fall into either of the [value expression](#value-expressions) or
+[conditional expressions](#conditional-expressions) categories, so you are able to use a
+[value command](#value-command-expressions) wherever you would use a [value expression](#value-expressions) and use a
+[conditional command](#conditional-command-expressions) where you would use a
+[conditional expression](#conditional-expressions)).
 
 #### Value Command Expressions
- - [ ] specify `join` as the way to handle commands returning a string
+Value commands can be used the same as you would any other [value expression](#value-expressions) in that it is used to
+access values. The value the command evaluates to depends entirely on the arguments the command is given.
+
+##### dirname(expr)
+Returns everything in the given path except for the filename. If `expr` evaluates to a list `dirname` will return a copy
+of the list with each element transformed with `dirname`.
+
+For example, the undo expression `dirname('/some/path')` would evaluate to `/some`, and with `LIST` set to `['/some/path',
+/some/other/path/']` the undo expression `dirname($LIST)` would evaluate to `['/some', '/some/other']`.
+
+##### basename(expr)
+Returns the filename of a given path. If `expr` evaluates to a list `basename` will return a copy of the list with each
+element transformed with `basename`.
+
+For example, the undo expression `basename('/some/path')` would evaluate to `path`, and with `LIST` set to `['/some/path',
+/some/other/path/']` the undo expression `basename($LIST)` would evaluate to `['/path', '/path']`.
+
+##### abspath(expr)
+Returns the absolute path of a given path. if `expr` evaluates to a list `abspath` will return a copy of the list with
+each element transformed with `abspath`.
+
+For example, the undo expression `abspath('path/')` might evaluate to `/some/absolute/path`, and with `LIST` set to
+`['path', 'another/path']` might evaluate to `['/some/absolute/path', '/some/absolute/other/path']`.
+
+##### env(value)
+Functions the same as an [accessor expression](#accessor-expressions) but for environment variables, if the environment
+variable is not set the command evaluates to an empty string. For example, `env('SHELL')` might evaluate to
+`"/usr/bin/bash"`, but `env('TOM_BOMBADIL_IN_THE_PETER_JACKSON_MOVIES')` would evaluate to `""` because it does not
+exist.
+
+##### join(list, delimiter)
+Returns a list of values joined together into a single string value using a delimiter. For example, with `LIST` set to
+`['a', 'b', 'c']` the expression `join($LIST, ', ')` will evaluate to `"a, b, c"`.
 
 #### Conditional Command Expressions
 
