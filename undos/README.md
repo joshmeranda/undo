@@ -1,6 +1,31 @@
 This is the parent directory for all undo files. In this README you will find documentation for the undo file syntax and
 a list of general best practices and guidelines to follow when writing your own undo files.
 
+# Table Contents
+ - [Command Patterns](#command-patterns)
+   - [Commands](#commands)
+   - [Argument Patterns](#argument-pattern)
+     - [Identifier](#identifier)
+     - [Quantifier](#quantifier)
+     - [Delimiter](#delimiter)
+   - [Argument Group Pattern](#argument-group-pattern)
+   - [Putting it All Together](#putting-it-all-together)
+ - [Undo Expressions](#undo-expressions)
+   - [Value Expressions](#value-expressions)
+     - [Accessor Expressions](#accessor-expressions)
+       - [List Expansion](#list-expansion)
+     - [Ternary Expressions](#ternary-expressions)
+     - [String Literal Expressions](#string-literal-expressions)
+     - [String Expansion Expressions](#string-expansion-expressions)
+   - [Conditional Expressions](#conditional-expressions)
+     - [Existence Expressions](#existence-expressions)
+ - [Command Expressions](#command-expressions)
+   - [Value Command Expressions](#value-command-expressions)
+   - [Conditional Command Expressions](#conditional-command-expressions)
+ - [Best Practices and Guidelines](#best-practices-and-guidelines)
+   - [Grouping Files](#grouping-files)
+   - [Testing](#testing)
+
 # Format
 All undo files are written in [TOML](https://toml.io/en/) files, due to it's easy to read and write format. If you are
 unfamiliar with TOML files, take some time to review its documentation, this project only leverages some of the most
@@ -385,13 +410,13 @@ Returns a list of values joined together into a single string value using a deli
 
 #### Conditional Command Expressions
 
-# Best Practices and Guidelines
+## Best Practices and Guidelines
 In this section you will find some general best practices, and guidelines to follow when writing your own undo files.
 
-## Grouping files
+### Grouping files
 As much as possible try to group related commands into their own directory, such as how all the GNU Coreutils commands
 are stored under the [coreutils](/undos/coreutils) directory. This may also apply to a single command with large sub
 commands like `git`, where each sub-command should be separated into its own file. For example, the command `git add`
 should be stored in a file called `git/git-add.toml`.
 
-## Testing
+### Testing
