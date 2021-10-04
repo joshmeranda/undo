@@ -329,8 +329,8 @@ list, it goes through each of the same steps except the list of values is never 
 Let us assume that the identifier `LIST` has the value `["a", "b", "c"]`. If we wanted to show the list of values we
 might write the string expansion ``"LIST = `$LIST`"``; however, this would evaluate to the list value `["LIST = a",
 "LIST = b", LIST = c"]` because string expansions do not join unexpanded list values. To get the proper listing you can
-simply expand the list value: ``"LIST = `$LIST...`"``. Another equivalent option is to leverage the `join`
-[command expression](#command-expressions).
+simply expand the list value: ``"LIST = `$LIST...`"``. Another equivalent option is to leverage the
+[`join` command expression](#joinlist-delimiter).
 
 ### Conditional Expressions
 Conditional expressions can be used to check the state of the environment. These will primarily be used in
@@ -371,7 +371,7 @@ All command expressions will also fall into either of the [value expression](#va
 [conditional expressions](#conditional-expressions) categories, so you are able to use a
 [value command](#value-command-expressions) wherever you would use a [value expression](#value-expressions) and use a
 [conditional command](#conditional-command-expressions) where you would use a
-[conditional expression](#conditional-expressions)).
+[conditional expression](#conditional-expressions).
 
 #### Value Command Expressions
 Value commands can be used the same as you would any other [value expression](#value-expressions) in that it is used to
@@ -408,7 +408,24 @@ exist.
 Returns a list of values joined together into a single string value using a delimiter. For example, with `LIST` set to
 `['a', 'b', 'c']` the expression `join($LIST, ', ')` will evaluate to `"a, b, c"`.
 
+This command is especially useful when you need to join a list value returned by a
+[string expansion expression](#string-expansion-expressions).
+
 #### Conditional Command Expressions
+Conditional commands can be used the same as you would any other [conditional expression](#conditional-expressions) in
+that they can be used to check the status of the environment.
+
+##### exists(expr)
+Checks if a file or directory exists with the given name. If `epxr` evaluates to a list, the existence of each element
+is checked and if all are `true` then true is returned, but if any are `false` false is returned.
+
+##### isfile(expr)
+Checks if a file exists at the given path. If `epxr` evaluates to a list, the existence of each element is checked and
+if all are `true` then true is returned, but if any are `false` false is returned.
+
+##### isdir(expr)
+Checks if a directory exists at the given path. If `epxr` evaluates to a list, the existence of each element is checked
+and if all are `true` then true is returned, but if any are `false` false is returned.
 
 ## Best Practices and Guidelines
 In this section you will find some general best practices, and guidelines to follow when writing your own undo files.
