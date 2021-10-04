@@ -193,9 +193,9 @@ we end up with a command pattern like this:
 ```
 foo
     [-v --verbose]
-    
+
     (! [--do-nothing] [--do-something] [--do-someting-else])
-    
+
     <BAR...>
 ```
 
@@ -308,13 +308,35 @@ simply expand the list value: ``"LIST = `$LIST...`"``. Another equivalent option
 [command expression](#command-expressions).
 
 ### Conditional Expressions
+Conditional expressions can be used to check the state of the environment. These will primarily be used in
+[ternary expression](#ternary-expressions), and evaluate to boolean `true` or `false`. They cannot be used on their own
+to expect some value, even if you want a string representation of the boolean since there is no universal way to
+represent them that all commands will accept. For example, on command might expect a boolean flag to be abbreviated as
+`-t` or `-f`, where others might expect a full name `-true` or `-false` among other variations.
 
 #### Existence Expressions
+Existence expressions allow you to check for the existence of a value in a command. In a context where a conditional
+expression is expected, you can simply add the identifier of the target value. Take the command pattern we made in
+[putting it all together](#putting-it-all-together) as an example:
+
+```
+foo
+    [-v --verbose]
+
+    (! [--do-nothing] [--do-something] [--do-someting-else])
+
+    <BAR...>
+```
+
+If we wanted to see if the matched command contained the `--verbose` flag, the following Undo expression would add
+verbosity to the resulting undo command (in this case `un-foo`): `"un-foo % VERBOSE ? '--verbose' % % $BAR... %"`. In this example,
+if the matched command was `foo --verbose a b c` then undo command would be `un-foo --verbose a b c`, on the other hand
+if the matched command was `foo a b c` then the undo command would be `un-foo a b c`.
 
 ### Command Expressions
 
 #### Value Command Expressions
-[ ] specify `join` as the way to handle commands returning a string
+ - [ ] specify `join` as the way to handle commands returning a string
 
 #### Conditional Command Expressions
 
@@ -323,8 +345,8 @@ In this section you will find some general best practices, and guidelines to fol
 
 ## Grouping files
 As much as possible try to group related commands into their own directory, such as how all the GNU Coreutils commands
-are stored under the [`coreutils`](/undos/coreutils) directory. This may also apply to a single command with large sub commands like `git`,
-where each sub-command should be separated into its own file. For example, the command `git add` should be stored in a
-file called `git/git-add.toml`.
+are stored under the [coreutils](/undos/coreutils) directory. This may also apply to a single command with large sub
+commands like `git`, where each sub-command should be separated into its own file. For example, the command `git add`
+should be stored in a file called `git/git-add.toml`.
 
 ## Testing

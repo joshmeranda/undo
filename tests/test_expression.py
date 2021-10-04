@@ -846,22 +846,14 @@ class TestStringExpansion(unittest.TestCase):
         with self.assertRaises(ParseError):
             expr.evaluate(dict())
 
-    def test(self):
-        expr = expression.parse('join("=== `$LIST` ===", ";")')
-
-        assert isinstance(expr, ValueExpression)
-
-        result = expr.evaluate({"LIST": ["a", "b", "c"]})
-
-        print(result)
-
-        self.fail()
-
 
 class TestExistenceExpression(unittest.TestCase):
     def setUp(self):
         self.env = {
-            "A": "some_value"
+            "A": "some_value",
+            "NOT_SPECIFIED": None,
+            "TRUE": True,
+            "FALSE": False,
         }
 
     def test_exists(self):
@@ -883,6 +875,21 @@ class TestExistenceExpression(unittest.TestCase):
         expr = ExistenceExpression(True, Token(TokenKind.IDENT, "DOES_NOT_EXIST", 0))
 
         self.assertTrue(expr.evaluate(self.env))
+
+    def test_not_specified(self):
+        expr = ExistenceExpression(False, Token(TokenKind.IDENT, "NO_SPECIFIED", 0))
+
+        self.assertFalse(expr.evaluate(self.env))
+
+    def test_exists_flag_true(self):
+        expr = ExistenceExpression(False, Token(TokenKind.IDENT, "TRUE", 0))
+
+        self.assertTrue(expr.evaluate(self.env))
+
+    def test_exists_flag_false(self):
+        expr = ExistenceExpression(False, Token(TokenKind.IDENT, "FALSE", 0))
+
+        self.assertFalse(expr.evaluate(self.env))
 
 
 class TestValueCommandExpression(unittest.TestCase):
