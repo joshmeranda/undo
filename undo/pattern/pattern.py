@@ -96,7 +96,8 @@ class CommandPattern:
 
 __COMMAND_REGEX = re.compile("([a-zA-Z0-9_-]*)")
 
-__IDENTIFIER_REGEX = re.compile("[a-zA-Z_]+")
+__IDENTIFIER_REGEX = re.compile("[a-zA-Z_0-9"
+                                "]+")
 __QUANTIFIER_REGEX = re.compile(r"\.\.\.|"
                                 r"\*|"
                                 r"{([0-9]+)}")

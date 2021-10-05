@@ -27,6 +27,7 @@ is to let Undo parse the output of your shell's `history` command / built-in to 
 It will do this using the shell it found in the previous step. Or the user may explicitly pass Undo the command as an
 argument `undo --comand 'mv FILE NEW_NAME'`.
 
+### Writing Custom Undo Files
 One of the most powerful components of undo are the "undo files" in which you can specify how to undo commands. These
 are the declarative configuration files where the user can specify how to undo certain commands. More undo files can be
 added at any time, and will be used to resolve undo commands as long as the parent directory is specified in the

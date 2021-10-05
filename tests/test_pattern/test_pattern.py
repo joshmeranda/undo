@@ -73,6 +73,14 @@ class TestArgumentPattern(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_positional_with_alpha_num(self):
+        content = "<SRC1>"
+
+        expected = ArgumentPattern("SRC1", ArgNum(Quantifier.N, 1), list(), True, True, None), len(content)
+        actual = parse_argument_pattern(content)
+
+        self.assertEqual(expected, actual)
+
     def test_kebab_name(self):
         content = "[--no-clobber]"
 

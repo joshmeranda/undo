@@ -6,9 +6,9 @@ from undo import expand, resolve
 
 class TestLink(unittest.TestCase):
     def test_link(self):
-        command = "link FILE1 FILE2"
+        command = "link SOURCE DEST"
 
-        expected = ["rm FILE2"]
+        expected = ["rm DEST"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]

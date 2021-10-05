@@ -5,6 +5,6 @@
 
 
 [[entry]]
-cmd = 'link FILE1 FILE2'
-undo = 'rm FILE2'
+cmd = 'link <FILE1> <FILE2>'
+undo = 'rm % $FILE2 %'
 precise = true
