@@ -117,7 +117,7 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
@@ -127,7 +127,7 @@ class TestCp(unittest.TestCase):
     def test_copy_many_into_dir_precise(self):
         command = "cp --no-clobber A B C DIR"
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
@@ -171,7 +171,7 @@ class TestCp(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
@@ -181,7 +181,7 @@ class TestCp(unittest.TestCase):
     def test_copy_many_into_target_dir_precise(self):
         command = "cp --no-clobber --target-directory DIR A B C"
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]

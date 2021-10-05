@@ -9,8 +9,6 @@
 # directory which is trivial to check in the command patten.
 #
 # Documentation: https://www.gnu.org/software/coreutils/cp
-#
-# todo: use join(expr, " ") when removing files and the like to limit the aomut of commands run
 
 
 # cp [OPTION]... [-T] SOURCE DEST
@@ -24,7 +22,7 @@ cmd = '''cp
     [-f --force] [-u --update] [-i --interactive]
 
     [-T --no-target-directory] <SRC...> <DEST>'''
-undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST, ' ') %'''
 
 [[entry]]
 cmd = '''cp
@@ -35,7 +33,7 @@ cmd = '''cp
     (![-n --no-clobber] [--remove-destination])
 
     [-T --no-target-directory] <SRC...> <DEST>'''
-undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST, ' ') %'''
 precise = true
 
 
@@ -49,7 +47,7 @@ cmd = '''cp
     [-f --force] [-u --update] [-i --interactive]
 
     <-t --target-directory=> <SRC...>'''
-undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
+undo = '''rm % join("`$TARGET_DIRECTORY`/`basename($SRC)`", ' ') %'''
 
 [[entry]]
 cmd = '''cp
@@ -60,5 +58,5 @@ cmd = '''cp
     (![-n --no-clobber] [--remove-destination])
     <-t --target-directory=> <SRC...>'''
 
-undo = 'rm % "`$TARGET_DIRECTORY`/`basename($SRC)`" %'
+undo = '''rm % join("`$TARGET_DIRECTORY`/`basename($SRC)`", ' ') %'''
 precise = true
