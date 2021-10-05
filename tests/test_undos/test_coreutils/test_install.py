@@ -87,7 +87,7 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
@@ -121,7 +121,7 @@ class TestInstall(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B; rm DIR/C"]
+        expected = ["rm DIR/A DIR/B DIR/C"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]

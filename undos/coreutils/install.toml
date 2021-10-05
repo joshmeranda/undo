@@ -28,7 +28,7 @@ cmd = '''install
          [-C --compare]
 
          [-T --no-target-directory] <SRC...> <DEST>'''
-undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST %'
+undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST, ' ')%'''
 
 
 # install [OPTION]... -t DIRECTORY SOURCE...
@@ -40,7 +40,7 @@ cmd = '''install
          [-C --compare]
 
          <-t --target-directory=DIRECTORY> <SRC...>'''
-undo = 'rm % "`$DIRECTORY`/`basename($SRC)`" %'
+undo = '''rm % join("`$DIRECTORY`/`basename($SRC)`", ' ') %'''
 
 
 # install [OPTION]... -d DIRECTORY...
@@ -50,4 +50,4 @@ cmd = '''install
          [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
 
          <-d --directory=...>'''
-undo = 'rm --recursive % $DIRECTORY... %'
+undo = '''rm --recursive % join($DIRECTORY..., ' ') %'''
