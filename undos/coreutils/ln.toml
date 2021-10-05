@@ -25,7 +25,7 @@ cmd = '''ln
          (![-f --force] [--interactive])
 
          [-T --no-target-directory] <TARGET...> <DEST>'''
-undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST %'
+undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST, ' ') %'''
 
 [[entry]]
 cmd = '''ln
@@ -33,7 +33,7 @@ cmd = '''ln
          [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
 
          [-T --no-target-directory] <TARGET...> <DEST>'''
-undo = 'rm % isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST %'
+undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST, ' ') %'''
 precise = true
 
 
@@ -67,7 +67,7 @@ cmd = '''ln
          (![-f --force] [--interactive])
 
          <-t --target-directory=DIRECTORY> <TARGET...>'''
-undo = 'rm % "`$DIRECTORY`/`basename($TARGET)`" %'
+undo = '''rm % join("`$DIRECTORY`/`basename($TARGET)`", ' ') %'''
 
 [[entry]]
 cmd = '''ln
@@ -75,5 +75,5 @@ cmd = '''ln
          [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
 
          <-t --target-directory=DIRECTORY> <TARGET...>'''
-undo = 'rm % "`$DIRECTORY`/`basename($TARGET)`" %'
+undo = '''rm % join("`$DIRECTORY`/`basename($TARGET)`", ' ') %'''
 precise = true

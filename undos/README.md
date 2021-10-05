@@ -332,6 +332,9 @@ might write the string expansion ``"LIST = `$LIST`"``; however, this would evalu
 simply expand the list value: ``"LIST = `$LIST...`"``. Another equivalent option is to leverage the
 [`join` command expression](#joinlist-delimiter).
 
+Due to the expansion logic of string expansion expressions, it is preferable to use
+[string literals](#string-expansion-expressions) wherever possible to avoid unnecessary processing.
+
 ### Conditional Expressions
 Conditional expressions can be used to check the state of the environment. These will primarily be used in
 [ternary expression](#ternary-expressions), and evaluate to boolean `true` or `false`. They cannot be used on their own

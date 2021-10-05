@@ -122,7 +122,7 @@ class TestLn(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B"]
+        expected = ["rm DIR/A DIR/B"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
@@ -132,7 +132,7 @@ class TestLn(unittest.TestCase):
     def test_link_multiple_link_into_dir_precise(self):
         command = "ln A B DIR"
 
-        expected = ["rm DIR/A; rm DIR/B"]
+        expected = ["rm DIR/A DIR/B"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, False, "sh")]
@@ -203,7 +203,7 @@ class TestLn(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        expected = ["rm DIR/A; rm DIR/B"]
+        expected = ["rm DIR/A DIR/B"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
@@ -213,7 +213,7 @@ class TestLn(unittest.TestCase):
     def test_link_target_directory_multiple_precise(self):
         command = "ln -t DIR A B"
 
-        expected = ["rm DIR/A; rm DIR/B"]
+        expected = ["rm DIR/A DIR/B"]
         actual = [expand.expand(undo, env, ("%", "%"), "; ")
                   for env, undo in
                   resolve.resolve(command, [common.COREUTILS_UNDO_DIR], False, True, "sh")]
