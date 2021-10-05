@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import shlex
+import sys
 import subprocess
 import typing
 
@@ -77,6 +78,19 @@ def parse_args():
                         action="store_true", help="require user input before running the found undo command even when "
                                                   "there is only one")
 
+    shell_env_group = parser.add_argument_group("Parent Shell",
+                                                "control how Undo will determine the parent shell, by default it will "
+                                                "attempt to parse the value form procfs").add_mutually_exclusive_group()
+
+    shell_env_group.add_argument("--shell-env-on-error", action="store_true",
+                                 help="if the parent shell could not be determined, use the value of the 'SHELL' "
+                                      "environment variable as a failsafe")
+
+    shell_env_group.add_argument("--force-shell-env", action="store_true",
+                                 help="use the value of the 'SHELL' environment variable as the parent shell")
+
+    shell_env_group.add_argument("--shell", help="use this value as the parent shell")
+
     return parser.parse_args()
 
 
@@ -87,7 +101,16 @@ def main():
 
     logging.basicConfig(format="[%(levelname)s] %(message)s", level=50 - namespace.verbose * 10)
 
-    shell = utils.get_parent_shell()
+    if namespace.shell is None:
+        shell = utils.get_parent_shell(use_env=namespace.force_shell_env,
+                                       env_on_error=namespace.shell_env_on_error)
+    else:
+        shell = namespace.shell
+
+    if shell is None:
+        logging.critical(f"Undo was unable to determine the parent shell")
+
+        sys.exit(1)
 
     command = history.history(shell, 1)[0] if namespace.command is None else namespace.command
 
