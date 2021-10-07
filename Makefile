@@ -55,5 +55,5 @@ ${PY_SOURCES}: # do nothing
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 clean:
-	find . -name __pychache__ -exec ${RM} '{}' +
+	find . -name __pycache__ -exec ${RM} '{}' +
 	${RM} --force build dist undo.egg-info ${DISTRIBUTION_TAR} ${DISTRIBUTION_NAME}
