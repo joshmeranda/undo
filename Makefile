@@ -18,7 +18,7 @@ help:
 	@echo '  dist       create a distribution tar archive of the python wheel and undo'
 	@echo '             files'
 
-	@echo '  clean      clean the working directory of ALL unnecessary files (dist,'
+	@echo '  clean      clean the working directory of ALL unnecessary files (egg.info,'
 	@echo '             dist, etc)'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -42,8 +42,6 @@ ${DISTRIBUTION_TAR}: ${WHEEL} LICENSE README.md undos Makefile.dist
 
 	# create the tar
 	tar --gzip --verbose --create --file ${DISTRIBUTION_TAR} ${DISTRIBUTION_NAME}
-
-	${RM} ${DISTRIBUTION_NAME}
 
 ${WHEEL}: ${PY_SOURCES}
 	python -m build --wheel

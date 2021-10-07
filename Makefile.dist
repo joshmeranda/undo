@@ -14,8 +14,8 @@ help:
 	@echo 'TARGETS:'
 	@echo '  install    install the package and data files to the system'
 
-	@echo '  uninstall  uninstall the package from the system and remove'
-	@echo '             installed data files'
+	@echo '  uninstall  uninstall the package from the system and remove installed data'
+	@echo '             files'
 
 	@echo 'VALUES:'
 	@echo '  UNDO_DIR   the directory to install all undo files to (default'
