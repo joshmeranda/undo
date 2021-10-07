@@ -35,6 +35,7 @@ see in Undo files. There are several supported keys which you must use to proper
 | name              | meaning                                                                                          |
 | ----------------- | ------------------------------------------------------------------------------------------------ |
 | supported-shells  | a list of shells that every undo command will be valid in or `"all"` (default) if all shells are supported |
+| common            | a string containing argument patterns that are common to all command patterns in the Undo file   |
 | entry             | a simple object containing a command pattern and an undo expression                              |
 | entry.cmd         | the command pattern                                                                              |
 | entry.undo        | the undo expression                                                                              |
