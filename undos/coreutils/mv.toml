@@ -12,13 +12,12 @@
 #
 # Documentation: https://www.gnu.org/software/coreutils/mv
 
+common = '[--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]'
 
 # mv [OPTION]... [-T] SOURCE DEST
 # mv [OPTION]... SOURCE... DIRECTORY
 [[entry]]
 cmd = '''mv
-         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
-
          [-f --force] [-i --interactive] [-u --update]
 
          [-T --no-target-directory] <SRC...> <DST>'''
@@ -26,8 +25,6 @@ undo = 'mv % isdir($DST) ? "`$DST`/`basename($SRC)`" : $DST % % $SRC %'
 
 [[entry]]
 cmd = '''mv
-         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
-
          <-n --no-clobber>
 
          <SRC...> <DST>'''
@@ -38,8 +35,6 @@ precise = true
 # mv [OPTION]... -t DIRECTORY SOURCE...
 [[entry]]
 cmd = '''mv
-         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
-
          [-f --force] [-i --interactive] [-u --update]
 
          <-t --target-directory=> <SRC...>'''
@@ -47,8 +42,6 @@ undo = 'mv % "`$TARGET_DIRECTORY`/`basename($SRC)`" % % $SRC %'
 
 [[entry]]
 cmd = '''mv
-         [--backup[=CONTROL]] [-b] [--strip-trailing-slashes] [-S --suffix=] [-Z --context]
-
          <-n --no-clobber>
 
          <-t --target-directory=> <SRC...>'''

@@ -14,14 +14,13 @@
 #
 # Documentation: https://www.gnu.org/software/coreutils/ln
 
+common = '''[--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
+    [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]'''
 
 # ln [OPTION]... [-T] TARGET LINK_NAME
 # ln [OPTION]... TARGET... DIRECTORY
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
-
          (![-f --force] [--interactive])
 
          [-T --no-target-directory] <TARGET...> <DEST>'''
@@ -29,8 +28,6 @@ undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST, ' ') %
 
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
 
          [-T --no-target-directory] <TARGET...> <DEST>'''
 undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($TARGET)`" : $DEST, ' ') %'''
@@ -40,9 +37,6 @@ precise = true
 # ln [OPTION]... TARGET
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
-
          (![-f --force] [--interactive])
 
          <TARGET>'''
@@ -50,8 +44,6 @@ undo = 'rm % basename($TARGET) %'
 
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
 
          <TARGET>'''
 undo = 'rm % basename($TARGET) %'
@@ -61,9 +53,6 @@ precise = true
 # ln [OPTION]... -t DIRECTORY TARGET...
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
-
          (![-f --force] [--interactive])
 
          <-t --target-directory=DIRECTORY> <TARGET...>'''
@@ -71,8 +60,6 @@ undo = '''rm % join("`$DIRECTORY`/`basename($TARGET)`", ' ') %'''
 
 [[entry]]
 cmd = '''ln
-         [--backup[=CONTROL]] [-b] [-d -F --directory] [-L --logical] [-n --no-dereference] [-P --physical]
-         [-r --relative] [-s --symbolic] [-S --suffix=] [-V --verbose]
 
          <-t --target-directory=DIRECTORY> <TARGET...>'''
 undo = '''rm % join("`$DIRECTORY`/`basename($TARGET)`", ' ') %'''

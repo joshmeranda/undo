@@ -10,15 +10,14 @@
 #
 # Documentation: https://www.gnu.org/software/coreutils/cp
 
+common = '''[-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
+    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
+    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]'''
 
 # cp [OPTION]... [-T] SOURCE DEST
 # cp [OPTION]... SOURCE... DEST
 [[entry]]
 cmd = '''cp
-    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
-    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
-    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
-
     [-f --force] [-u --update] [-i --interactive]
 
     [-T --no-target-directory] <SRC...> <DEST>'''
@@ -26,10 +25,6 @@ undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST, ' ') %'''
 
 [[entry]]
 cmd = '''cp
-    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
-    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
-    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
-
     (![-n --no-clobber] [--remove-destination])
 
     [-T --no-target-directory] <SRC...> <DEST>'''
@@ -40,10 +35,6 @@ precise = true
 # cp [OPTION]... -t DIRECTORY SOURCE>...
 [[entry]]
 cmd = '''cp
-    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
-    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
-    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
-
     [-f --force] [-u --update] [-i --interactive]
 
     <-t --target-directory=> <SRC...>'''
@@ -51,11 +42,8 @@ undo = '''rm % join("`$TARGET_DIRECTORY`/`basename($SRC)`", ' ') %'''
 
 [[entry]]
 cmd = '''cp
-    [-a --archive] [--atributes-only] [--backup[=CONTROL]] [-b] [--copy-contents] [-d] [-H] [-l --link]
-    [-P --no-dereference] [-p] [--preserve=:,] [--no-preserve=:,] [--parents] [-R -r --recursive] [--sparse=WHEN]
-    [--strip-trailing-slashes] [-v --verbose] [--one-file-system] [-Z] [--context=]
-
     (![-n --no-clobber] [--remove-destination])
+
     <-t --target-directory=> <SRC...>'''
 
 undo = '''rm % join("`$TARGET_DIRECTORY`/`basename($SRC)`", ' ') %'''

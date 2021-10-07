@@ -18,13 +18,13 @@
 #
 # Documentation: https://www.gnu.org/software/coreutils/install
 
+common = '''[--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
+    [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]'''
+
 # install [OPTION]... [-T] SOURCE DEST
 # install [OPTION]... SOURCE... DIRECTORY
 [[entry]]
 cmd = '''install
-         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
-         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
-
          [-C --compare]
 
          [-T --no-target-directory] <SRC...> <DEST>'''
@@ -34,9 +34,6 @@ undo = '''rm % join(isdir($DEST) ? "`$DEST`/`basename($SRC)`" : $DEST, ' ')%'''
 # install [OPTION]... -t DIRECTORY SOURCE...
 [[entry]]
 cmd = '''install
-         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
-         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
-
          [-C --compare]
 
          <-t --target-directory=DIRECTORY> <SRC...>'''
@@ -46,8 +43,5 @@ undo = '''rm % join("`$DIRECTORY`/`basename($SRC)`", ' ') %'''
 # install [OPTION]... -d DIRECTORY...
 [[entry]]
 cmd = '''install
-         [--backup[=CONTROL]] [-b] [-c] [-g --group=] [-m --mode=] [-o --owener=] [-p --preserver-timestamps]
-         [-s --strip] [--strip-program=PROGRAM] [-S --suffix=] [--verbose] [--preserve-context] [-Z] [--context=]
-
          <-d --directory=...>'''
 undo = '''rm --recursive % join($DIRECTORY..., ' ') %'''
