@@ -106,8 +106,6 @@ def expand(undo: str, env: dict[str, typing.Union[str, list[str]]], bounds: tupl
     expanded = list()
 
     for i in splits:
-
-        # todo: ideally we would not re-run the same regex pattern here
         if re.fullmatch(expr_regex, i):
             expr = expression.parse(i.removeprefix(bounds[0]).removesuffix(bounds[1]).strip())
 

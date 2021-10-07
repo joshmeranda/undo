@@ -116,8 +116,8 @@ def main():
 
     resolved = resolve.resolve(command, include_dirs, namespace.all, namespace.allow_imprecise, shell)
 
-    # todo: make this a set to allow multiple resolutions to the same undo command
-    undos = [expand.expand(undo, env, ("%", "%"), "; ") for (env, undo) in resolved]
+    # construct set to remove duplicates, and cast to list to allow for accessing elements
+    undos = list({expand.expand(undo, env, ("%", "%"), "; ") for (env, undo) in resolved})
 
     if len(undos) == 0:
         print(f"no command was found to undo '{command}'")

@@ -517,7 +517,6 @@ def __parse_accessor_expression_tokens(tokens: list[Token]) -> (AccessorExpressi
         raise UnexpectedTokenError(TokenKind.IDENT, tokens[1].kind)
 
     if len(tokens) >= 3 and tokens[2].kind == TokenKind.ELLIPSE:
-        # todo: allow specifying a custom delimiter
         return AccessorExpression(tokens[1], True, " "), 3
 
     return AccessorExpression(tokens[1], False), 2
