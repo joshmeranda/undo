@@ -6,6 +6,7 @@ import shlex
 import toml
 
 from undo import pattern
+from undo.pattern import ArgumentPattern
 
 
 class RegistrySpecError(ValueError):
@@ -16,6 +17,7 @@ class RegistrySpecError(ValueError):
 # todo: maybe add caching? might not make much sense for a command line tool
 class __UndoRegistry:
     __SHELLS = "supported-shells"
+    __COMMON = "common"
 
     __ENTRIES = "entry"
     __ENTRY_CMD = "cmd"
@@ -32,6 +34,8 @@ class __UndoRegistry:
 
         self.__shells = data.setdefault(self.__SHELLS, "all")
 
+        self.__common = self.__parse_common_arguments(data.setdefault(self.__COMMON, ""))
+
         try:
             self.__entries = [{
                 self.__ENTRY_CMD: entry[self.__ENTRY_CMD],
@@ -41,6 +45,16 @@ class __UndoRegistry:
                 for entry in data.setdefault(self.__ENTRIES, dict())]
         except KeyError as err:
             raise RegistrySpecError(f"missing required key {err}")
+
+    def __parse_common_arguments(self, common: str) -> list[ArgumentPattern]:
+        """Parse all arguments in the common field.
+
+        :param common: the string containing all teh argument patterns.
+        :return: the list of parsed argument patterns.
+        """
+        virtual_group, _ = pattern.parse_argument_group_pattern(f"({common})")
+
+        return virtual_group.args
 
     def is_shell_supported(self, shell: str) -> bool:
         """Determine if the given shell is supported by the registry file.
@@ -73,6 +87,7 @@ class __UndoRegistry:
             undo_pattern = entry[self.__ENTRY_UNDO]
             precise = entry[self.__ENTRY_PRECISE]
 
+            cmd_pattern.arguments += self.__common
             parser = pattern.pattern_to_argparse(cmd_pattern)
 
             # todo: consider logging non-matching command?

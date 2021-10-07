@@ -192,6 +192,26 @@ class TestUndoRegistry(unittest.TestCase):
                     # undo = "untest"
                     """))
 
+    def test_common_arguments(self):
+        registry = UndoRegistry(io.StringIO("""supported-shells = ['bash']
+        common = '[--force] [-L --log-level=LEVEL]'
+        
+        [[entry]]
+        cmd = "test"
+        undo = "untest"
+        precise = true
+        """))
+
+        self.assertListEqual([({"FORCE": True, "LEVEL": None}, "untest")],
+                             registry.resolve("test --force", False))
+
+        self.assertListEqual([({"FORCE": False, "LEVEL": "WARN"}, "untest")],
+                             registry.resolve("test --log-level WARN", False))
+
+        self.assertListEqual([({"FORCE": False, "LEVEL": None}, "untest")], registry.resolve("test", False))
+
+        self.assertListEqual([], registry.resolve("test --unknown-argument", False))
+
 
 class TestResolve(unittest.TestCase):
     TEST_SEARCH_ALL_DIR = os.path.join(RESOURCE_DIR_PATH, "search_all")

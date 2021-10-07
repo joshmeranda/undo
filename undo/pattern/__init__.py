@@ -4,7 +4,10 @@ import argparse
 
 
 class _UndoArgumentParser(argparse.ArgumentParser):
-    """ArgumentParser allowing for inclusive required groups, and disable all exit on error functionality."""
+    """ArgumentParser allowing for inclusive required groups, and disable all exit on error functionality.
+
+    todo: cache value for 'add_argument_pattern'
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
